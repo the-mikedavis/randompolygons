@@ -320,14 +320,6 @@ public class RCPGenerator {
             return (int) (100*this.angle - 100*o.angle);
         }
 
-        /**
-         * Converts the pertinent info to string.
-         * @return  stats in the form of a string.
-         */
-        public String toString () {
-            return "x: " + this.x + " y: " + this.y + " angle: " + this.angle;
-        }
-
     }
 
     /** Circle. */
@@ -377,7 +369,7 @@ public class RCPGenerator {
      * Convert the object-stored vertex and circle info int int[][][].
      * Also record the start and goal locations
      */
-    public class Converter {
+    private class Converter {
 
         private Body[] shapes;
         private int[][][] coors;
