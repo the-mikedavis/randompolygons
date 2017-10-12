@@ -5,6 +5,7 @@ How to use:
 ```java
 RCPGenerator gen = new RCPGenerator(width, height);
 boolean success = gen.render();
+// or just gen.render();
 int[][][] coordinates = gen.getCoordinates();
 int[] start = gen.getStart();
 int[] goal = gen.getGoal();
@@ -96,3 +97,4 @@ for a = 0 to shapes.length
     for b = 0 to the shape's vertices.length
         draw edge from vertices[b] to vertices[b + 1 == vertices.length ? 0 : b + 1]
 ```
+

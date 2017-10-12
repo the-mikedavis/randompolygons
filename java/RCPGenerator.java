@@ -64,6 +64,8 @@ int[] goalCoor = environment.getGoalCoordinates();
 public class RCPGenerator {
 
     private int width, height, maxr, minr;
+    private int[][][] coordinates = new int[0][][];
+    private int[] start = new int[0], goal = new int[0];
 
     /**
      * Creates a generator with default 500, 300 dimensions.
@@ -96,17 +98,17 @@ public class RCPGenerator {
      * @return  a vessel object, with has coordinates,
      * start, and goal properties.
      */
-    public Vessel render () {
+    public boolean render () {
         return render(8);
     }
 
     /**
      * Renders a new 2D plane filled with n polygons.
      * @param   count   the number of polygons in the field
-     * @return  a vessel object, with has coordinates,
+     * @return  true when complete.
      * start, and goal properties.
      */
-    public Vessel render (int count) {
+    public boolean render (int count) {
         //  start with an enforced minimum of 8
         count = count > 0 ? count : 8;
 
@@ -158,13 +160,13 @@ public class RCPGenerator {
                             isContained(c.vertices, i));
             }
             //  apply angle property
-            Double start = null;
+            Double startang = null;
             for (int i = 0; i < c.vertices.length; i++) {
                 Vertex e = c.vertices[i];
                 double angle = Math.atan2(e.y - c.y, e.x - c.x);
-                if (start == null)
-                    start = angle;
-                else if (angle < start)
+                if (startang == null)
+                    startang = angle;
+                else if (angle < startang)
                     angle += Math.PI * 2;
                 e.angle = angle;
             }
@@ -173,8 +175,46 @@ public class RCPGenerator {
             Arrays.sort(c.vertices);
         }
 
-        //  return the data
-        return (new Converter(data)).export();
+        //  get the new data
+        Converter c = new Converter(data);
+
+        coordinates = c.getCoordinates();
+        start = c.getStartCoordinates();
+        goal = c.getGoalCoordinates();
+
+        return true;
+    }
+
+    /** Gets the rendered coordinate field. If render has
+     * not been called yet, it will call render first.
+     * @return the field of polygon coordinates
+     */
+    public int[][][] getCoordinates() {
+        if (coordinates.length == 0)
+            render();
+        return coordinates;
+    }
+
+    /**
+     * Gets the start coordinates. If render has not been called
+     * yet, this will call it.
+     * @return an [x,y] coordinate pair of the start
+     */
+    public int[] getStart() {
+        if (start.length == 0)
+            render();
+        return start;
+    }
+
+    /**
+     * Gets the goal coordinates. If render has not been called
+     * yet, this will call it.
+     * @return an [x,y] coordinate pair of the goal
+     */
+    public int[] getGoal() {
+        if (start.length == 0)
+            render();
+        return goal;
     }
 
     /** Checks if a vertex is too close to another vertex
@@ -392,10 +432,10 @@ public class RCPGenerator {
          * Exports the converted coordinates to a Vessel. The
          * Vessel will hold all data statically.
          * @return  a new vessel with all points.
-         */
         public Vessel export () {
             return new Vessel(coors, getStartCoordinates(), getGoalCoordinates());
         }
+        */
     }
 }
 
