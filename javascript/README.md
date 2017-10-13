@@ -36,8 +36,8 @@ The output is already sorted clockwise, so an implementation like this can be us
 for (let c : field)
     for (let i = 0; i < c.vertices.length; i++)
         drawEdge(c.vertices[i].x, c.vertices[i].y,
-            c.vertices[i + 1 == c.vertices.length ? 0 : i + 1].x,
-            c.vertices[i + 1 == c.vertices.length ? 0 : i + 1].y);
+            c.vertices[i + 1 === c.vertices.length ? 0 : i + 1].x,
+            c.vertices[i + 1 === c.vertices.length ? 0 : i + 1].y);
 ```
 
 To see a working version made by d3.js, see my site [here](https://mcarsondavis.com/projects/rpfp).
