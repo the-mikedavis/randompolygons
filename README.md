@@ -8,11 +8,11 @@ These scripts, in Java and JavaScript, allow the user to generate the coordinate
 See the readme in each language folder to learn more about the specific implementations.
 
 Sample outputs:
-![sample](polygonfield0.png)
+![sample0](samples/polygonfield0.png)
 
 The circles are not in the output, but they show how the field is generated.
 
-![sample](polygonfield1.png)
+![sample1](samples/polygonfield1.png)
 
 ## How it works
 
