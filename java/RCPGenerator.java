@@ -116,7 +116,7 @@ public class RCPGenerator {
 
         //  adjust the min and max radii for the count
         //  and aspect ratio
-        maxr = (width * width) / (height * count);
+        maxr = (int) (2 * Math.sqrt(width * height) / count);
         minr = width / 50;
         //  create the first circle totally randomly
         data[0] = new Body(ri(5, width - 5), ri(5, height - 5),
