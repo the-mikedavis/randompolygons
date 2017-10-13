@@ -7,12 +7,14 @@ These scripts, in Java and JavaScript, allow the user to generate the coordinate
 
 See the readme in each language folder to learn more about the specific implementations.
 
-Sample output:
-![sample](polygonfield.png)
+Sample outputs:
+![sample](polygonfield0.png)
 
 The circles are not in the output, but they show how the field is generated.
 
-### How it works
+![sample](polygonfield1.png)
+
+## How it works
 
 **TL;DR**: this solution first places circles randomly and gives them randomly large radii. Then it places vertices in those circles and then sorts them clockwise.
 
