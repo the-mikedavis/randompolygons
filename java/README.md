@@ -89,7 +89,7 @@ int[][][] coordinates = new int[][][]{
     }
 };
 ```
-Moreover, the vertices are already in sorted order (either clockwise or anti-clockwise), which means that you can draw a shape using an implementation of this psuedocode:
+Moreover, the vertices are already in sorted order (clockwise), which means that you can draw a shape using an implementation of this psuedocode:
 
 ```
 //assuming 0 indexing
