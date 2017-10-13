@@ -9,16 +9,16 @@ import java.util.ArrayList;
  * How to use:
 {@code: 
 RCPGenerator generator = new RCPGenerator(width, height);
-Vessel environment = generator.render(n);
-int[][][] shapeCoordinates = environment.getCoordinates();
-int[] startCoor = environment.getStartCoordinates();
-int[] goalCoor = environment.getGoalCoordinates();
+generator.render(n);
+int[][][] shapeCoordinates = generator.getCoordinates();
+int[] startCoor = generator.getStart();
+int[] goalCoor = generator.getGoal();
 }
  *
  * Coordinates come in the form of <code>int[]{x, y}</code>.
  * Each vertex of a shape has an array of x and y. Each shape has
  * an array of vertices (<code>int[][]</code>). The whole field
- * which is returned by <code>environment.getCoordinates()<code>.
+ * which is returned by <code>generator.getCoordinates()<code>.
  * is an array of shapes (<code>int[][][]</code>).
  *
  * I recommend using this triple array to create objects (object
@@ -320,14 +320,6 @@ public class RCPGenerator {
             return (int) (100*this.angle - 100*o.angle);
         }
 
-        /**
-         * Converts the pertinent info to string.
-         * @return  stats in the form of a string.
-         */
-        public String toString () {
-            return "x: " + this.x + " y: " + this.y + " angle: " + this.angle;
-        }
-
     }
 
     /** Circle. */
@@ -377,7 +369,7 @@ public class RCPGenerator {
      * Convert the object-stored vertex and circle info int int[][][].
      * Also record the start and goal locations
      */
-    public class Converter {
+    private class Converter {
 
         private Body[] shapes;
         private int[][][] coors;
