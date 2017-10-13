@@ -419,15 +419,6 @@ public class RCPGenerator {
         private int[] getGoalCoordinates () {
             return new int[]{width - 3, ri(height/4, 3*height/4)};
         }
-
-        /**
-         * Exports the converted coordinates to a Vessel. The
-         * Vessel will hold all data statically.
-         * @return  a new vessel with all points.
-        public Vessel export () {
-            return new Vessel(coors, getStartCoordinates(), getGoalCoordinates());
-        }
-        */
     }
 }
 
