@@ -12,7 +12,7 @@
             maxr = 2 * Math.sqrt(width * height) / (count),
             minr = width / 50;
 
-        data[0] = new Body(ri(5, width - 5), ri(5, height - 5),
+        data[0] = new Poly(ri(5, width - 5), ri(5, height - 5),
             ri(minr, maxr));
 
         let r = 20;
@@ -22,7 +22,7 @@
             //  This is a strict while loop. If the data does not satisfy
             //  the conditions, the map cannot be made
             do {
-                data[i] = new Body(ri(5, width - 5), ri(5, height - 5), r);
+                data[i] = new Poly(ri(5, width - 5), ri(5, height - 5), r);
             } while (isContained(data, i));
             // expand this toddler circle out as far as possible, but still
             // randomly
@@ -73,6 +73,8 @@
 
             //  sort into clockwise order for rendering
             c.vertices.sort((a, b) => a.angle - b.angle);
+
+            //  grow the polygons
         }
 
         return data;
@@ -112,7 +114,7 @@
     }
 
 
-    class Body {
+    class Poly {
 
         constructor (x, y, r) {
             this.x = x;
