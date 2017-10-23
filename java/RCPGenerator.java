@@ -1,5 +1,6 @@
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.awt.geom.Line2D;
 
 /**
  * Generates a random field of <b>convex</b> polygons.
@@ -112,14 +113,14 @@ public class RCPGenerator {
         //  start with an enforced minimum of 8
         count = count > 0 ? count : 8;
 
-        Body[] data = new Body[count];
+        Poly[] data = new Poly[count];
 
         //  adjust the min and max radii for the count
         //  and aspect ratio
         maxr = (int) (2 * Math.sqrt(width * height) / count);
         minr = width / 50;
         //  create the first circle totally randomly
-        data[0] = new Body(ri(5, width - 5), ri(5, height - 5),
+        data[0] = new Poly(ri(5, width - 5), ri(5, height - 5),
                 ri(minr, maxr));
 
         //  create as many circles
@@ -128,7 +129,7 @@ public class RCPGenerator {
         for (int i = 1; i < data.length; i++) {
             //  create a new point until it's free from other circles
             do {
-                data[i] = new Body(ri(5, width - 5), ri(5, height - 5), r);
+                data[i] = new Poly(ri(5, width - 5), ri(5, height - 5), r);
             } while (isContained(data, i));
 
             //  shrink the circle from randomly large to fit if needed
@@ -140,7 +141,7 @@ public class RCPGenerator {
 
         //  add vertices to each circle
         for (int ct = 0; ct < data.length; ct++) {
-            Body c = data[ct];
+            Poly c = data[ct];
             //  for each side (or vertex, it's the same)
             for (int i = 0; i < c.sides; i++) {
                 //  provide a way to break out of solutions
@@ -149,7 +150,7 @@ public class RCPGenerator {
                     double angle = Math.random() * Math.PI * 2,
                            x = Math.cos(angle) * c.radius,
                            y = Math.sin(angle) * c.radius;
-                    c.vertices[i] = new Vertex(x + c.x, y + c.y, c.radius);
+                    c.vertices[i] = new Vertex(x + c.x, y + c.y, c.radius, angle);
                     //  break out if the min distance is unsatisfiable
                     if (whilecount++ > 100 &&
                             !pointIsntOnMap(c.vertices[i].x, c.vertices[i].y))
@@ -171,11 +172,19 @@ public class RCPGenerator {
                 e.angle = angle;
             }
 
-            //  sort the data here
+            //  sort the data
             Arrays.sort(c.vertices);
         }
 
-        //  get the new data
+        //  perform a tight fit of all polygons, expanding the radii
+        for (int i = 0; i < data.length; i++) {
+            data[i].grow(3 * data[i].radius / 2);
+            for (double setr = data[i].radius; isStrongContained(data, i) ||
+                    !strongIsOnMap(data[i]); setr -= width / 100)
+                data[i].grow(setr);
+        }
+
+        //  prep the data for export
         Converter c = new Converter(data);
 
         coordinates = c.getCoordinates();
@@ -236,9 +245,16 @@ public class RCPGenerator {
      * @param   arr the body array
      * @param   index   the index of the node to test
      */
-    private boolean isContained (Body[] arr, int index) {
+    private boolean isContained (Poly[] arr, int index) {
         for (int i = 0; i < index; i++)
             if (arr[i].overlaps(arr[index]))
+                return true;
+        return false;
+    }
+
+    private boolean isStrongContained (Poly[] arr, int index) {
+        for (int i = 0; i < arr.length; i++)
+            if (i != index && arr[i].strongOverlap(arr[index]))
                 return true;
         return false;
     }
@@ -258,6 +274,18 @@ public class RCPGenerator {
     private boolean pointIsntOnMap(double x, double y) {
         return x < 5D || x > (double) (width - 5) || 
             y < 5D || y > (double) (height - 5);
+    }
+
+    /** Check if a poly is fully on the map.
+     * @return true if the polygon doesn't have a point off the map.
+     */
+    private boolean strongIsOnMap(Poly p) {
+        double[][] reduction = p.reduction();
+        //  when it is on the map
+        if ((reduction[0][0] > 5 && reduction[0][1] < width - 5) &&
+            (reduction[1][0] > 5 && reduction[1][1] < height - 5))
+            return true;
+        return false;
     }
 
     /** Generates a random integer between [min, max] inclusive.
@@ -284,7 +312,7 @@ public class RCPGenerator {
     private class Vertex implements Comparable<Vertex> {
 
         public double x, y, radius;
-        public double angle;
+        public double angle, setangle;
 
         /**
          * Creates a new Vertex.
@@ -296,6 +324,11 @@ public class RCPGenerator {
             this.x = x;
             this.y = y;
             this.radius = r;
+        }
+
+        public Vertex (double x, double y, double r, double angle) {
+            this(x, y, r);
+            this.setangle = angle;
         }
 
         /**
@@ -323,7 +356,7 @@ public class RCPGenerator {
     }
 
     /** Circle. */
-    private class Body extends Vertex {
+    private class Poly extends Vertex {
 
         public int sides;
         public Vertex[] vertices;
@@ -334,10 +367,22 @@ public class RCPGenerator {
          * @param   y   y coordinate
          * @param   r   radius of the circle
          */
-        public Body (double x, double y, double r) {
+        public Poly (double x, double y, double r) {
             super(x, y, r);
             this.sides = ri(3, 6);
             this.vertices = new Vertex[this.sides];
+        }
+
+        /**
+         * Set the radius to a new value. The vertices will follow suit.
+         * @param   r  the new radius to set to
+         */
+        public void grow (double r) {
+            this.radius = r;
+            for (int i = 0; i < vertices.length; i++) {
+                vertices[i].x = Math.cos(vertices[i].setangle) * r + x;
+                vertices[i].y = Math.sin(vertices[i].setangle) * r + y;
+            }
         }
 
         /**
@@ -345,7 +390,7 @@ public class RCPGenerator {
          * @param   o   the other circle
          * @return true if they intersect
          */
-        public boolean overlaps (Body o) {
+        public boolean overlaps (Poly o) {
             double dx = o.x - this.x,
                 dy = o.y - this.y,
                 distance = Math.sqrt(dx*dx + dy*dy);
@@ -358,10 +403,61 @@ public class RCPGenerator {
          * @return  true if they have the same coordinates
          * and radii
          */
-        public boolean equals (Body o) {
+        public boolean equals (Poly o) {
             return this.x == o.x &&
                 this.y == o.y &&
                 this.radius == o.radius;
+        }
+
+        /** Check the overlap of two polygons, not circles.
+         * @param   o   the other polygon
+         * @return true if there is any containment or overlapping
+         * i.e. intersection.
+         */
+        public boolean strongOverlap (Poly o) {
+            //  rule out those too far apart from one another
+            if (!this.overlaps(o))
+                return false;
+
+            for (int i = 0; i < this.vertices.length; i++)
+                for (int j = 0; j < o.vertices.length; j++)
+                    if (Line2D.linesIntersect(vertices[i].x, vertices[i].y,
+                        vertices[i + 1 == vertices.length ? 0 : i + 1].x,
+                        vertices[i + 1 == vertices.length ? 0 : i + 1].y,
+                        o.vertices[j].x, o.vertices[j].y,
+                        o.vertices[j + 1 == o.vertices.length ? 0 : j + 1].x,
+                        o.vertices[j + 1 == o.vertices.length ? 0 : j + 1].y))
+                            return true;
+
+            double[][] thisRed = this.reduction();
+            double[][] oRed = o.reduction();
+
+            if (((thisRed[0][0] < oRed[0][0] && thisRed[0][1] > oRed[0][1]) &&
+                (thisRed[1][0] < oRed[1][0] && thisRed[1][1] > oRed[1][1])) ||
+                ((oRed[0][0] < thisRed[0][0] && oRed[0][1] > thisRed[0][1]) &&
+                (oRed[1][0] < thisRed[1][0] && oRed[1][1] > thisRed[1][1])))
+                return true;
+
+            return false;
+        }
+
+        public double[][] reduction () {
+            double xmin = 10000D, xmax = -1D, ymin = 10000D, ymax = -1D;
+            for (int i = 0; i < this.vertices.length; i++) {
+                if (vertices[i].x < xmin)
+                    xmin = vertices[i].x;
+                else if (vertices[i].x > xmax)
+                    xmax = vertices[i].x;
+
+                if (vertices[i].y < ymin)
+                    ymin = vertices[i].y;
+                else if (vertices[i].y > ymax)
+                    ymax = vertices[i].y;
+            }
+            return new double[][]{
+                {xmin, xmax},
+                {ymin, ymax}
+            };
         }
     }
 
@@ -371,14 +467,14 @@ public class RCPGenerator {
      */
     private class Converter {
 
-        private Body[] shapes;
+        private Poly[] shapes;
         private int[][][] coors;
 
         /**
          * Creates a new converter instance.
-         * @param   shapes  Body array of circles with vertices
+         * @param   shapes  Poly array of circles with vertices
          */
-        public Converter (Body[] shapes) {
+        public Converter (Poly[] shapes) {
             this.shapes = shapes;    
             coors = new int[shapes.length][][];
             for (int a = 0; a < shapes.length; a++) {
