@@ -39,15 +39,9 @@
                 do {
                     //  generate a random point on the circumference
                     let angle = Math.random() * Math.PI * 2,
-                        x = Math.cos(angle) * c.radius,
-                        y = Math.sin(angle) * c.radius;
+                        x = Math.cos(angle) * c.radius + c.x,
+                        y = Math.sin(angle) * c.radius + c.y;
 
-                    /*
-                    c.vertices[i] = {
-                        x : Math.floor(x) + c.x,
-                        y : Math.floor(y) + c.y
-                    };
-                    */
                     c.vertices[i] = new Vertex(x, y, c.radius);
                     c.vertices[i].setangle = angle;
 
@@ -86,8 +80,9 @@
             let c = data[i];
             c.grow(3 * c.radius / 2);
             for (let setr = c.radius; isStrongContained(data, i) ||
-                !strongIsOnMap(c); setr -= width / 100)
+                !strongIsOnMap(c); setr -= 1) {
                 c.grow(setr);
+            }
         }
 
         return data;
@@ -196,7 +191,7 @@
 
             for (let i = 0; i < this.vertices.length; i++)
                 for (let j = 0; j < o.vertices.length; j++)
-                    if (!lineIntersects(this.vertices[i].x, this.vertices[i].y,
+                    if (lineIntersects(this.vertices[i].x, this.vertices[i].y,
                         this.vertices[i + 1 == this.vertices.length ? 0 : i + 1].x,
                         this.vertices[i + 1 == this.vertices.length ? 0 : i + 1].y,
                         o.vertices[j].x, o.vertices[j].y,
