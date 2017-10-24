@@ -134,39 +134,7 @@ public class RCPGenerator {
             //    data[ct].radius = rad;
 
             //  apply vertices
-            Poly c = data[ct];
-            //  for each side (or vertex, it's the same)
-            for (int i = 0; i < c.sides; i++) {
-                //  provide a way to break out of solutions
-                int whilecount = 0;
-                do {
-                    double angle = Math.random() * Math.PI * 2,
-                           x = Math.cos(angle) * c.radius,
-                           y = Math.sin(angle) * c.radius;
-                    c.vertices[i] = new Vertex(x + c.x, y + c.y, c.radius, angle);
-                    //  break out if the min distance is unsatisfiable
-                    if (whilecount++ > 100 &&
-                            !pointIsntOnMap(c.vertices[i].x, c.vertices[i].y))
-                        break;
-                    //  repeat while the point isn't on the map or
-                    //  it's to close to another vertex
-                } while (pointIsntOnMap(c.vertices[i].x, c.vertices[i].y) ||
-                            isContained(c.vertices, i));
-            }
-            //  apply angle property
-            Double startang = null;
-            for (int i = 0; i < c.vertices.length; i++) {
-                Vertex e = c.vertices[i];
-                double angle = Math.atan2(e.y - c.y, e.x - c.x);
-                if (startang == null)
-                    startang = angle;
-                else if (angle < startang)
-                    angle += Math.PI * 2;
-                e.angle = angle;
-            }
-
-            //  sort the data
-            Arrays.sort(c.vertices);
+            populateVertices(data[ct]);
         }
 
         //  perform a tight fit of all polygons, expanding the radii
@@ -185,6 +153,41 @@ public class RCPGenerator {
         goal = c.getGoalCoordinates();
 
         return true;
+    }
+
+    private void populateVertices (Poly c) {
+        //  for each side (or vertex, it's the same)
+        for (int i = 0; i < c.sides; i++) {
+            //  provide a way to break out of solutions
+            int whilecount = 0;
+            do {
+                double angle = Math.random() * Math.PI * 2,
+                       x = Math.cos(angle) * c.radius,
+                       y = Math.sin(angle) * c.radius;
+                c.vertices[i] = new Vertex(x + c.x, y + c.y, c.radius, angle);
+                //  break out if the min distance is unsatisfiable
+                if (whilecount++ > 100 &&
+                        !pointIsntOnMap(c.vertices[i].x, c.vertices[i].y))
+                    break;
+                //  repeat while the point isn't on the map or
+                //  it's too close to another vertex
+            } while (pointIsntOnMap(c.vertices[i].x, c.vertices[i].y) ||
+                    isContained(c.vertices, i));
+        }
+        //  apply angle property
+        Double startang = null;
+        for (int i = 0; i < c.vertices.length; i++) {
+            Vertex e = c.vertices[i];
+            double angle = Math.atan2(e.y - c.y, e.x - c.x);
+            if (startang == null)
+                startang = angle;
+            else if (angle < startang)
+                angle += Math.PI * 2;
+            e.angle = angle;
+        }
+
+        //  sort the data
+        Arrays.sort(c.vertices);
     }
 
     /** Gets the rendered coordinate field. If render has
