@@ -126,22 +126,16 @@ public class RCPGenerator {
             //  create a new point until it's free from other circles
             do {
                 data[ct] = new Poly(ri(5, width - 5), ri(5, height - 5), minr);
-            } while (isContained(data, ct));
-
-            //  shrink the circle from randomly large to fit if needed
-            data[ct].radius = ri(3*maxr/4, maxr);
-            //for (int rad = (int) data[ct].radius; rad >= minr && isContained(data, ct); rad -= 3)
-            //    data[ct].radius = rad;
-
-            //  apply vertices
-            populateVertices(data[ct]);
+                data[ct].radius = ri(3*maxr/4, maxr);
+                populateVertices(data[ct]);
+            } while (isStrongContained(data, ct));
         }
 
         //  perform a tight fit of all polygons, expanding the radii
         for (int i = 0; i < data.length; i++) {
             data[i].grow(2 * data[i].radius);
-            for (double setr = data[i].radius; isStrongContained(data, i) ||
-                    !strongIsOnMap(data[i]); setr -= 1)
+            for (double setr = data[i].radius; isStrongContainedComplete(data, i) ||
+                    !strongIsOnMap(data[i]); setr -= 2)
                 data[i].grow(setr);
         }
 
@@ -249,6 +243,13 @@ public class RCPGenerator {
     }
 
     private boolean isStrongContained (Poly[] arr, int index) {
+        for (int i = 0; i < index; i++)
+            if (i != index && arr[i].strongOverlap(arr[index]))
+                return true;
+        return false;
+    }
+
+    private boolean isStrongContainedComplete (Poly[] arr, int index) {
         for (int i = 0; i < arr.length; i++)
             if (i != index && arr[i].strongOverlap(arr[index]))
                 return true;
