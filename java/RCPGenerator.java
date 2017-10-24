@@ -120,27 +120,24 @@ public class RCPGenerator {
         maxr = (int) (2 * Math.sqrt(width * height) / count);
         minr = width / 50;
         //  create the first circle totally randomly
-        data[0] = new Poly(ri(5, width - 5), ri(5, height - 5),
-                ri(minr, maxr));
+        //data[0] = new Poly(ri(5, width - 5), ri(5, height - 5),
+        //        ri(minr, maxr));
 
         //  create as many circles
         //  as the specified number of shapes
         int r = minr;
-        for (int i = 1; i < data.length; i++) {
+        for (int ct = 0; ct < data.length; ct++) {
             //  create a new point until it's free from other circles
             do {
-                data[i] = new Poly(ri(5, width - 5), ri(5, height - 5), r);
-            } while (isContained(data, i));
+                data[ct] = new Poly(ri(5, width - 5), ri(5, height - 5), r);
+            } while (isContained(data, ct));
 
             //  shrink the circle from randomly large to fit if needed
-            data[i].radius = ri(3*maxr/4, maxr);
-            for (int rad = (int) data[i].radius; rad >= r && isContained(data, i); rad -= 5) {
-                data[i].radius = rad;
-            }
-        }
+            //data[i].radius = ri(3*maxr/4, maxr);
+            //for (int rad = (int) data[i].radius; rad >= r && isContained(data, i); rad -= 5)
+            //    data[i].radius = rad;
 
-        //  add vertices to each circle
-        for (int ct = 0; ct < data.length; ct++) {
+            //  apply vertices
             Poly c = data[ct];
             //  for each side (or vertex, it's the same)
             for (int i = 0; i < c.sides; i++) {
@@ -175,6 +172,10 @@ public class RCPGenerator {
             //  sort the data
             Arrays.sort(c.vertices);
         }
+
+        //  add vertices to each circle
+        //for (int ct = 0; ct < data.length; ct++) {
+        //}
 
         //  perform a tight fit of all polygons, expanding the radii
         for (int i = 0; i < data.length; i++) {
