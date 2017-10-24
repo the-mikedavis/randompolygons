@@ -429,6 +429,9 @@ public class RCPGenerator {
                         o.vertices[j + 1 == o.vertices.length ? 0 : j + 1].y))
                             return true;
 
+            /* using reductions is an efficient way, but it has many edge cases
+             * which make it unusable for getting polygons really close to each
+             * other.
             double[][] thisRed = this.reduction();
             double[][] oRed = o.reduction();
 
@@ -436,6 +439,31 @@ public class RCPGenerator {
                 (thisRed[1][0] < oRed[1][0] && thisRed[1][1] > oRed[1][1])) ||
                 ((oRed[0][0] < thisRed[0][0] && oRed[0][1] > thisRed[0][1]) &&
                 (oRed[1][0] < thisRed[1][0] && oRed[1][1] > thisRed[1][1])))
+                return true;
+            */
+
+            // check if o is inside this by counting ray traces to 0. If it's
+            // odd, it's inside. If even, it's outside
+            int intersections = 0;
+            for (int i = 0; i < this.vertices.length; i++)
+                if (Line2D.linesIntersect(vertices[i].x, vertices[i].y,
+                    vertices[i + 1 == vertices.length ? 0 : i + 1].x,
+                    vertices[i + 1 == vertices.length ? 0 : i + 1].y,
+                    o.x, o.y, 0D, 0D))
+                    intersections++;
+
+            if (intersections % 2 == 1)
+                return true;
+
+            intersections = 0;
+            for (int i = 0; i < o.vertices.length; i++)
+                if (Line2D.linesIntersect(o.vertices[i].x, o.vertices[i].y,
+                    o.vertices[i + 1 == o.vertices.length ? 0 : i + 1].x,
+                    o.vertices[i + 1 == o.vertices.length ? 0 : i + 1].y,
+                    this.x, this.y, 0D, 0D))
+                    intersections++;
+
+            if (intersections % 2 == 1)
                 return true;
 
             return false;
