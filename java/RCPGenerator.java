@@ -119,23 +119,19 @@ public class RCPGenerator {
         //  and aspect ratio
         maxr = (int) (2 * Math.sqrt(width * height) / count);
         minr = width / 50;
-        //  create the first circle totally randomly
-        //data[0] = new Poly(ri(5, width - 5), ri(5, height - 5),
-        //        ri(minr, maxr));
 
         //  create as many circles
         //  as the specified number of shapes
-        int r = minr;
         for (int ct = 0; ct < data.length; ct++) {
             //  create a new point until it's free from other circles
             do {
-                data[ct] = new Poly(ri(5, width - 5), ri(5, height - 5), r);
+                data[ct] = new Poly(ri(5, width - 5), ri(5, height - 5), minr);
             } while (isContained(data, ct));
 
             //  shrink the circle from randomly large to fit if needed
-            //data[i].radius = ri(3*maxr/4, maxr);
-            //for (int rad = (int) data[i].radius; rad >= r && isContained(data, i); rad -= 5)
-            //    data[i].radius = rad;
+            data[ct].radius = ri(3*maxr/4, maxr);
+            //for (int rad = (int) data[ct].radius; rad >= minr && isContained(data, ct); rad -= 3)
+            //    data[ct].radius = rad;
 
             //  apply vertices
             Poly c = data[ct];
@@ -173,15 +169,11 @@ public class RCPGenerator {
             Arrays.sort(c.vertices);
         }
 
-        //  add vertices to each circle
-        //for (int ct = 0; ct < data.length; ct++) {
-        //}
-
         //  perform a tight fit of all polygons, expanding the radii
         for (int i = 0; i < data.length; i++) {
-            data[i].grow(3 * data[i].radius / 2);
+            data[i].grow(2 * data[i].radius);
             for (double setr = data[i].radius; isStrongContained(data, i) ||
-                    !strongIsOnMap(data[i]); setr -= width / 100)
+                    !strongIsOnMap(data[i]); setr -= 1)
                 data[i].grow(setr);
         }
 
@@ -443,8 +435,11 @@ public class RCPGenerator {
                 return true;
             */
 
-            // check if o is inside this by counting ray traces to 0. If it's
-            // odd, it's inside. If even, it's outside
+            //  this is a point in polygon problem which is solved by ray
+            //  tracing.
+
+            //  check if o is inside this by counting ray traces to 0. If it's
+            //  odd, it's inside. If even, it's outside
             int intersections = 0;
             for (int i = 0; i < this.vertices.length; i++)
                 if (Line2D.linesIntersect(vertices[i].x, vertices[i].y,
