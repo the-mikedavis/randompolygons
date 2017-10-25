@@ -124,9 +124,11 @@ public class RCPGenerator {
         //  as the specified number of shapes
         for (int ct = 0; ct < data.length; ct++) {
             //  create a new point until it's free from other circles
+            double radius = (double) maxr * ((double) (data.length / ((double) (data.length + ct))));
             do {
-                data[ct] = new Poly(ri(5, width - 5), ri(5, height - 5), minr);
-                data[ct].radius = ri(3*maxr/4, maxr);
+                data[ct] = new Poly(ri(5, width - 5), ri(5, height - 5), radius);
+                //data[ct] = new Poly(ri(5, width - 5), ri(5, height - 5), minr);
+                //data[ct].radius = ri(3*maxr/4, maxr);
                 populateVertices(data[ct]);
             } while (isStrongContained(data, ct));
         }
