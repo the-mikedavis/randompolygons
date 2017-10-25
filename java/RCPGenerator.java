@@ -428,19 +428,6 @@ public class RCPGenerator {
                         o.vertices[j + 1 == o.vertices.length ? 0 : j + 1].y))
                             return true;
 
-            /* using reductions is an efficient way, but it has many edge cases
-             * which make it unusable for getting polygons really close to each
-             * other.
-            double[][] thisRed = this.reduction();
-            double[][] oRed = o.reduction();
-
-            if (((thisRed[0][0] < oRed[0][0] && thisRed[0][1] > oRed[0][1]) &&
-                (thisRed[1][0] < oRed[1][0] && thisRed[1][1] > oRed[1][1])) ||
-                ((oRed[0][0] < thisRed[0][0] && oRed[0][1] > thisRed[0][1]) &&
-                (oRed[1][0] < thisRed[1][0] && oRed[1][1] > thisRed[1][1])))
-                return true;
-            */
-
             //  this is a point in polygon problem which is solved by ray
             //  tracing.
 
