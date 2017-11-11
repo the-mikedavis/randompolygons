@@ -113,7 +113,8 @@ public class RCPGenerator {
         //  start with an enforced minimum of 8
         count = count > 0 ? count : 8;
 
-        Poly[] data = new Poly[count];
+        int len = 100;
+        Poly[] data = new Poly[len];
 
         //  adjust the min and max radii for the count
         //  and aspect ratio
@@ -122,7 +123,9 @@ public class RCPGenerator {
 
         //  create as many circles
         //  as the specified number of shapes
-        for (int ct = 0; ct < data.length; ct++) {
+        //for (int ct = 0; ct < data.length; ct++) {
+        int ct = 0;
+        do {
             //  create a new point until it's free from other circles
             do {
                 data[ct] = new Poly(
@@ -131,19 +134,20 @@ public class RCPGenerator {
                         ri(3*maxr/4, maxr));
                 populateVertices(data[ct]);
             } while (isStrongContained(data, ct));
-        }
+        } while (density(data, ct++) < 0.5);
+        ct--;
 
         //  perform a tight fit of all polygons, expanding the radii
-        for (int i = 0; i < data.length; i++) {
+        for (int i = 0; i < ct; i++) {
             data[i].grow(2 * data[i].radius);
             for (double setr = data[i].radius; 
-                    isStrongContainedComplete(data, i) ||
+                    isStrongContainedComplete(data, i, ct) ||
                     !strongIsOnMap(data[i]); setr -= 2)
                 data[i].grow(setr);
         }
 
         //  prep the data for export
-        Converter c = new Converter(data);
+        Converter c = new Converter(data, ct);
 
         coordinates = c.getCoordinates();
         start = c.getStartCoordinates();
@@ -252,10 +256,14 @@ public class RCPGenerator {
         return false;
     }
 
-    private boolean isStrongContainedComplete (Poly[] arr, int index) {
-        for (int i = 0; i < arr.length; i++)
+    private boolean isStrongContainedComplete (Poly[] arr, 
+            int index, int size) {
+        for (int i = 0; i < size; i++) {
+            if (arr[i] == null)
+                System.out.println(i);
             if (i != index && arr[i].strongOverlap(arr[index]))
                 return true;
+        }
         return false;
     }
 
@@ -286,6 +294,20 @@ public class RCPGenerator {
             (reduction[1][0] > 5 && reduction[1][1] < height - 5))
             return true;
         return false;
+    }
+
+    /**
+     * Find the density of the map from the current list of polygons.
+     * @param  field the current array of polygons
+     * @param  size  the size of the field
+     */
+    private double density (Poly[] field, int size) {
+        //  the area of the map, sub borders
+        double mapArea = (width - 10) * (height - 10);
+        double polyArea = 0d;
+        for (int i = 0; i <= size; i++)
+            polyArea += field[i].area();
+        return polyArea / mapArea;
     }
 
     /** Generates a random integer between [min, max] inclusive.
@@ -507,10 +529,10 @@ public class RCPGenerator {
          * Creates a new converter instance.
          * @param   shapes  Poly array of circles with vertices
          */
-        public Converter (Poly[] shapes) {
+        public Converter (Poly[] shapes, int size) {
             this.shapes = shapes;    
-            coors = new int[shapes.length][][];
-            for (int a = 0; a < shapes.length; a++) {
+            coors = new int[size][][];
+            for (int a = 0; a < size; a++) {
                 coors[a] = new int[shapes[a].vertices.length][];
                 for (int b = 0; b < shapes[a].vertices.length; b++) {
                     coors[a][b] = new int[]{
