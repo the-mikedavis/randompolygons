@@ -1,5 +1,6 @@
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.List;
 import java.awt.geom.Line2D;
 
 /**
@@ -113,41 +114,39 @@ public class RCPGenerator {
         //  start with an enforced minimum of 8
         count = count > 0 ? count : 8;
 
-        int len = 100;
-        Poly[] data = new Poly[len];
+        ArrayList<Poly> shapes = new ArrayList<Poly>(60);
 
         //  adjust the min and max radii for the count
         //  and aspect ratio
-        maxr = (int) (2 * Math.sqrt(width * height) / count);
+        //maxr = (int) (2 * Math.sqrt(width * height) / count);
+        maxr = width / 10;
         minr = width / 50;
 
         //  create as many circles
         //  as the specified number of shapes
-        //for (int ct = 0; ct < data.length; ct++) {
-        int ct = 0;
         do {
+            Poly p;
             //  create a new point until it's free from other circles
             do {
-                data[ct] = new Poly(
-                        ri(5, width - 5), 
+                p = new Poly(ri(5, width - 5), 
                         ri(5, height - 5), 
                         ri(3*maxr/4, maxr));
-                populateVertices(data[ct]);
-            } while (isStrongContained(data, ct));
-        } while (density(data, ct++) < 0.5);
-        ct--;
+                populateVertices(p);
+            } while (isStrongContained(shapes, p));
+            shapes.add(p);
+        } while (density(shapes) < 0.5);
 
         //  perform a tight fit of all polygons, expanding the radii
-        for (int i = 0; i < ct; i++) {
-            data[i].grow(2 * data[i].radius);
-            for (double setr = data[i].radius; 
-                    isStrongContainedComplete(data, i, ct) ||
-                    !strongIsOnMap(data[i]); setr -= 2)
-                data[i].grow(setr);
+        for (Poly s : shapes) {
+            s.grow(2 * s.radius);
+            for (double setr = s.radius; 
+                    isStrongContained(shapes, s) ||
+                    !strongIsOnMap(s); setr -= 2)
+                s.grow(setr);
         }
 
         //  prep the data for export
-        Converter c = new Converter(data, ct);
+        Converter c = new Converter(shapes);
 
         coordinates = c.getCoordinates();
         start = c.getStartCoordinates();
@@ -191,7 +190,8 @@ public class RCPGenerator {
         Arrays.sort(c.vertices);
     }
 
-    /** Gets the rendered coordinate field. If render has
+    /**
+     * Gets the rendered coordinate field. If render has
      * not been called yet, it will call render first.
      * @return the field of polygon coordinates
      */
@@ -238,34 +238,43 @@ public class RCPGenerator {
 
     /** Checks if a circle is overlapped by any other circle
      * in a body array. This is inexpensive for small arrays,
-     * butis Theta(n)
+     * but is Theta(n)
      * @param   arr the body array
      * @param   index   the index of the node to test
      */
-    private boolean isContained (Poly[] arr, int index) {
-        for (int i = 0; i < index; i++)
-            if (arr[i].overlaps(arr[index]))
+    private boolean isContained (List<Poly> list, Poly p) {
+        for (Poly q : list)
+            if (!p.equals(q) && q.overlaps(p))
                 return true;
         return false;
     }
 
-    private boolean isStrongContained (Poly[] arr, int index) {
-        for (int i = 0; i < index; i++)
-            if (i != index && arr[i].strongOverlap(arr[index]))
+    /**
+     * Checks if the polygon is overlapped by the other polygon.
+     * @param list the list of polygons
+     * @param p the current polygon
+     * @return true if the polygon is overlapped
+     */
+    private boolean isStrongContained (List<Poly> list, Poly p) {
+        for (Poly q : list)
+            if (!p.equals(q) && q.strongOverlap(p))
                 return true;
         return false;
     }
 
+    /*
+     * Checks if the polygon is overlapped by any other polygon in
+     * the entire list of polygons.
+     * @param list the list of polygons
+     * @param p the current polygon
     private boolean isStrongContainedComplete (Poly[] arr, 
             int index, int size) {
-        for (int i = 0; i < size; i++) {
-            if (arr[i] == null)
-                System.out.println(i);
+        for (int i = 0; i < size; i++)
             if (i != index && arr[i].strongOverlap(arr[index]))
                 return true;
-        }
         return false;
     }
+    */
 
     /** Checks if a point is on the 2D plane.
      * @param   x   x coordinate
@@ -298,15 +307,15 @@ public class RCPGenerator {
 
     /**
      * Find the density of the map from the current list of polygons.
-     * @param  field the current array of polygons
-     * @param  size  the size of the field
+     * @param  list the current list of polygons.
+     * @return the density of the map.
      */
-    private double density (Poly[] field, int size) {
+    private double density (List<Poly> list) {
         //  the area of the map, sub borders
         double mapArea = (width - 10) * (height - 10);
         double polyArea = 0d;
-        for (int i = 0; i <= size; i++)
-            polyArea += field[i].area();
+        for (Poly p : list)
+            polyArea += p.area();
         return polyArea / mapArea;
     }
 
@@ -522,22 +531,21 @@ public class RCPGenerator {
      */
     private class Converter {
 
-        private Poly[] shapes;
         private int[][][] coors;
 
         /**
          * Creates a new converter instance.
-         * @param   shapes  Poly array of circles with vertices
+         * @param   shapes  Poly list of circles with vertices
          */
-        public Converter (Poly[] shapes, int size) {
-            this.shapes = shapes;    
-            coors = new int[size][][];
-            for (int a = 0; a < size; a++) {
-                coors[a] = new int[shapes[a].vertices.length][];
-                for (int b = 0; b < shapes[a].vertices.length; b++) {
+        public Converter (List<Poly> shapes) {
+            coors = new int[shapes.size()][][];
+            for (int a = 0; a < shapes.size(); a++) {
+                Poly p = shapes.get(a);
+                coors[a] = new int[p.vertices.length][];
+                for (int b = 0; b < p.vertices.length; b++) {
                     coors[a][b] = new int[]{
-                            (int) shapes[a].vertices[b].x,
-                            (int) shapes[a].vertices[b].y
+                            (int) p.vertices[b].x,
+                            (int) p.vertices[b].y
                         };
                 }
             }
