@@ -419,14 +419,15 @@ public class RCPGenerator {
             if (!this.overlaps(o))
                 return false;
 
-            for (int i = 0; i < this.vertices.length; i++)
+            int len = this.vertices.length;
+            for (int i = 0; i < len; i++)
                 for (int j = 0; j < o.vertices.length; j++)
                     if (Line2D.linesIntersect(vertices[i].x, vertices[i].y,
-                        vertices[i + 1 == vertices.length ? 0 : i + 1].x,
-                        vertices[i + 1 == vertices.length ? 0 : i + 1].y,
+                        vertices[(i + 1) % len].x,
+                        vertices[(i + 1) % len].y,
                         o.vertices[j].x, o.vertices[j].y,
-                        o.vertices[j + 1 == o.vertices.length ? 0 : j + 1].x,
-                        o.vertices[j + 1 == o.vertices.length ? 0 : j + 1].y))
+                        o.vertices[(j + 1) % o.vertices.length].x,
+                        o.vertices[(j + 1) % o.vertices.length].y))
                             return true;
 
             //  this is a point in polygon problem which is solved by ray
@@ -437,8 +438,8 @@ public class RCPGenerator {
             int intersections = 0;
             for (int i = 0; i < this.vertices.length; i++)
                 if (Line2D.linesIntersect(vertices[i].x, vertices[i].y,
-                    vertices[i + 1 == vertices.length ? 0 : i + 1].x,
-                    vertices[i + 1 == vertices.length ? 0 : i + 1].y,
+                    vertices[(i + 1) % len].x,
+                    vertices[(i + 1) % len].y,
                     o.x, o.y, 0D, 0D))
                     intersections++;
 
@@ -448,8 +449,8 @@ public class RCPGenerator {
             intersections = 0;
             for (int i = 0; i < o.vertices.length; i++)
                 if (Line2D.linesIntersect(o.vertices[i].x, o.vertices[i].y,
-                    o.vertices[i + 1 == o.vertices.length ? 0 : i + 1].x,
-                    o.vertices[i + 1 == o.vertices.length ? 0 : i + 1].y,
+                    o.vertices[(i + 1) % o.vertices.length].x,
+                    o.vertices[(i + 1) % o.vertices.length].y,
                     this.x, this.y, 0D, 0D))
                     intersections++;
 
@@ -476,6 +477,20 @@ public class RCPGenerator {
                 {xmin, xmax},
                 {ymin, ymax}
             };
+        }
+
+        /**
+         * Finds the area of the polygon. This is found given a simple formula
+         * which is O(V).
+         * @return the area of this polygon instance.
+         */
+        public double area () {
+            double sum = 0d;
+            int l = vertices.length;
+            for (int i = 0; i < l; i++)
+                sum += vertices[i].x * vertices[(i + 1) % l].y - 
+                    vertices[i].y * vertices[(i + 1) % l].x;
+            return Math.abs(sum / 2);
         }
     }
 
