@@ -125,7 +125,10 @@ public class RCPGenerator {
         for (int ct = 0; ct < data.length; ct++) {
             //  create a new point until it's free from other circles
             do {
-                data[ct] = new Poly(ri(5, width - 5), ri(5, height - 5), ri(3*maxr/4, maxr));
+                data[ct] = new Poly(
+                        ri(5, width - 5), 
+                        ri(5, height - 5), 
+                        ri(3*maxr/4, maxr));
                 populateVertices(data[ct]);
             } while (isStrongContained(data, ct));
         }
@@ -133,7 +136,8 @@ public class RCPGenerator {
         //  perform a tight fit of all polygons, expanding the radii
         for (int i = 0; i < data.length; i++) {
             data[i].grow(2 * data[i].radius);
-            for (double setr = data[i].radius; isStrongContainedComplete(data, i) ||
+            for (double setr = data[i].radius; 
+                    isStrongContainedComplete(data, i) ||
                     !strongIsOnMap(data[i]); setr -= 2)
                 data[i].grow(setr);
         }
