@@ -368,10 +368,8 @@ public class RCPGenerator {
          * @return  true if they are too close
          */
         public boolean overlaps (Vertex o) {
-            double dx = o.x - this.x,
-                dy = o.y - this.y,
-                distance = Math.sqrt(dx*dx + dy*dy);
-            return distance <= this.radius - 1D;
+            return Math.hypot(o.x - this.x, o.y - this.y)
+                <= (this.radius - 1D);
         }
 
         /**
@@ -422,10 +420,8 @@ public class RCPGenerator {
          * @return true if they intersect
          */
         public boolean overlaps (Poly o) {
-            double dx = o.x - this.x,
-                dy = o.y - this.y,
-                distance = Math.sqrt(dx*dx + dy*dy);
-            return distance <= o.radius + this.radius;
+            return Math.hypot(o.x - this.x, o.y - this.y)
+                <= (o.radius + this.radius);
         }
 
         /**
