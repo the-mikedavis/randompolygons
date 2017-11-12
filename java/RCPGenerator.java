@@ -1,6 +1,7 @@
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Iterator;
 import java.awt.geom.Line2D;
 
 /**
@@ -111,7 +112,7 @@ public class RCPGenerator {
      * start, and goal properties.
      */
     public boolean render (int count) {
-        double targetDensity = 0.35;
+        double targetDensity = 0.5;
         //  start with an enforced minimum of 8
         count = count > 0 ? count : 8;
 
@@ -121,7 +122,7 @@ public class RCPGenerator {
         //  and aspect ratio
         //maxr = (int) (2 * Math.sqrt(width * height) / count);
         maxr = width / 5;
-        minr = width / 25;
+        minr = width / 45;
 
         //  create as many circles
         //  as the specified number of shapes
@@ -137,7 +138,14 @@ public class RCPGenerator {
             shapes.add(p);
         } while (density(shapes) < targetDensity);
 
+        /*
+        for (Iterator<Poly> it = shapes.iterator(); it.hasNext();)
+            if (isStrongContained(shapes, it.next()))
+                it.remove();
+                */
+
         //  perform a tight fit of all polygons, expanding the radii
+        /*
         for (Poly s : shapes) {
             s.grow(2 * s.radius);
             for (double setr = s.radius; 
@@ -145,6 +153,7 @@ public class RCPGenerator {
                     !strongIsOnMap(s); setr -= 2)
                 s.grow(setr);
         }
+        */
 
         //  prep the data for export
         Converter c = new Converter(shapes);
@@ -299,7 +308,7 @@ public class RCPGenerator {
      */
     private double density (List<Poly> list) {
         //  the area of the map, sub borders
-        double mapArea = (width - 6) * (height - 6);
+        double mapArea = (width - 10) * (height - 10);
         double polyArea = 0d;
         for (Poly p : list)
             polyArea += p.area();
@@ -389,10 +398,6 @@ public class RCPGenerator {
             this.vertices = new Vertex[this.sides];
         }
 
-        public Poly (int[][] coordinates) {
-            vertices = new Vertex[coordinates.length];
-        }
-
         /**
          * Set the radius to a new value. The vertices will follow suit.
          * @param   r  the new radius to set to
@@ -416,7 +421,8 @@ public class RCPGenerator {
         }
 
         /**
-         * Checks equality cheaply.
+         * Checks equality of two Poly instances. This is a comparison of
+         * x, y, and radius.
          * @param   o   the other circle
          * @return  true if they have the same coordinates
          * and radii
@@ -450,15 +456,16 @@ public class RCPGenerator {
                         return true;
 
             //  this is the point in the polygon problem which is solved by ray
-            //  tracing.
+            //  tracing. this checks for containment of one polygon by another.
 
             //  check if o is inside this by counting ray traces to 0. If it's
             //  odd, it's inside. If even, it's outside
             if (rayIntersections(this, o) % 2 == 1)
                 return true;
 
+            return false;
             //  check if this is inside o
-            return (rayIntersections(o, this) % 2 == 1);
+            //return (rayIntersections(o, this) % 2 == 1);
         }
 
         //  use statically
@@ -473,12 +480,16 @@ public class RCPGenerator {
                             b.x, b.y, 0D, 0D)) {
                     intersections++;
                     //  check for an endpoint intersection half of the time
+                    /*
                     if (intersections % 2 == 0 && intersectsOnEndpoint(
                                 a.vertices[i].x, a.vertices[i].y,
                                 a.vertices[(i + 1) % len].x,
                                 a.vertices[(i + 1) % len].y,
-                                b.x, b.y, 0D, 0D))
+                                b.x, b.y, 0D, 0D)) {
                         intersections--;
+                        System.out.println("Intersection on endpoint");
+                    }
+                    */
                 }
             }
             return intersections;
@@ -506,8 +517,6 @@ public class RCPGenerator {
         }
 
         public boolean doubleEquals(double a, double b) {
-            if (Math.abs(a - b) < 2)
-                System.out.println("a=" + a + ". b=" + b);
             return Math.abs(a - b) < 0.5;
         }
 
