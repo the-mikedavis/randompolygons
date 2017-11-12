@@ -111,6 +111,7 @@ public class RCPGenerator {
      * start, and goal properties.
      */
     public boolean render (int count) {
+        double targetDensity = 0.3;
         //  start with an enforced minimum of 8
         count = count > 0 ? count : 8;
 
@@ -134,7 +135,7 @@ public class RCPGenerator {
                 populateVertices(p);
             } while (isStrongContained(shapes, p));
             shapes.add(p);
-        } while (density(shapes) < 0.5);
+        } while (density(shapes) < targetDensity);
 
         //  perform a tight fit of all polygons, expanding the radii
         for (Poly s : shapes) {
@@ -449,29 +450,60 @@ public class RCPGenerator {
 
             //  check if o is inside this by counting ray traces to 0. If it's
             //  odd, it's inside. If even, it's outside
+            if (rayIntersections(this, o) % 2 == 1)
+                return true;
+
+            //  check if this is inside o
+            return (rayIntersections(o, this) % 2 == 1);
+        }
+
+        //  use statically
+        private int rayIntersections (Poly a, Poly b) {
             int intersections = 0;
-            for (int i = 0; i < this.vertices.length; i++)
-                if (Line2D.linesIntersect(vertices[i].x, vertices[i].y,
-                    vertices[(i + 1) % len].x,
-                    vertices[(i + 1) % len].y,
-                    o.x, o.y, 0D, 0D))
+            int len = a.vertices.length;
+
+            for (int i = 0; i < len; i++) {
+                if (Line2D.linesIntersect(a.vertices[i].x, a.vertices[i].y,
+                        a.vertices[(i + 1) % len].x,
+                        a.vertices[(i + 1) % len].y,
+                        b.x, b.y, 0D, 0D)) {
                     intersections++;
+                    //  check for an endpoint intersection half of the time
+                    if (intersections % 2 == 0 && intersectsOnEndpoint(
+                            a.vertices[i].x, a.vertices[i].y,
+                            a.vertices[(i + 1) % len].x,
+                            a.vertices[(i + 1) % len].y,
+                            b.x, b.y, 0D, 0D))
+                        intersections--;
+                }
+            }
+            return intersections;
+        }
 
-            if (intersections % 2 == 1)
-                return true;
+        private boolean intersectsOnEndpoint(double x1, double y1,
+                double x2, double y2, double x3, double y3,
+                double x4, double y4) {
+            double m1, m2, b1, b2;
+            if (x2 - x1 == 0)
+                m1 = 1000000D;
+            else
+                m1 = ((y2 - y1) / (x2 - x1));
+            b1 = (y1 - m1 * x1);
 
-            intersections = 0;
-            for (int i = 0; i < o.vertices.length; i++)
-                if (Line2D.linesIntersect(o.vertices[i].x, o.vertices[i].y,
-                    o.vertices[(i + 1) % o.vertices.length].x,
-                    o.vertices[(i + 1) % o.vertices.length].y,
-                    this.x, this.y, 0D, 0D))
-                    intersections++;
+            if (x4 - x3 == 0)
+                m2 = 1000000D;
+            else
+                m2 = ((y4 - y3) / (x4 - x3));
+            b2 = (y3 - m2 * x3);
 
-            if (intersections % 2 == 1)
-                return true;
+            double x = (-(b2 - b1)) / (m2 - m1);
 
-            return false;
+            return doubleEquals(x, x1) || doubleEquals(x, x2);
+        }
+
+        private boolean doubleEquals(double a, double b) {
+            System.out.println("a=" + a + ". b=" + b);
+            return Math.abs(a - b) < 0.5;
         }
 
         public double[][] reduction () {
