@@ -114,13 +114,13 @@ public class RCPGenerator {
         //  start with an enforced minimum of 8
         count = count > 0 ? count : 8;
 
-        ArrayList<Poly> shapes = new ArrayList<Poly>(60);
+        List<Poly> shapes = new ArrayList<Poly>(60);
 
         //  adjust the min and max radii for the count
         //  and aspect ratio
         //maxr = (int) (2 * Math.sqrt(width * height) / count);
-        maxr = width / 10;
-        minr = width / 50;
+        maxr = width / 5;
+        minr = width / 25;
 
         //  create as many circles
         //  as the specified number of shapes
@@ -130,7 +130,7 @@ public class RCPGenerator {
             do {
                 p = new Poly(ri(5, width - 5), 
                         ri(5, height - 5), 
-                        ri(3*maxr/4, maxr));
+                        ri(minr, maxr));
                 populateVertices(p);
             } while (isStrongContained(shapes, p));
             shapes.add(p);
@@ -262,20 +262,6 @@ public class RCPGenerator {
         return false;
     }
 
-    /*
-     * Checks if the polygon is overlapped by any other polygon in
-     * the entire list of polygons.
-     * @param list the list of polygons
-     * @param p the current polygon
-    private boolean isStrongContainedComplete (Poly[] arr, 
-            int index, int size) {
-        for (int i = 0; i < size; i++)
-            if (i != index && arr[i].strongOverlap(arr[index]))
-                return true;
-        return false;
-    }
-    */
-
     /** Checks if a point is on the 2D plane.
      * @param   x   x coordinate
      * @param   y   y coordinate
@@ -312,7 +298,7 @@ public class RCPGenerator {
      */
     private double density (List<Poly> list) {
         //  the area of the map, sub borders
-        double mapArea = (width - 10) * (height - 10);
+        double mapArea = (width - 6) * (height - 6);
         double polyArea = 0d;
         for (Poly p : list)
             polyArea += p.area();
@@ -340,7 +326,7 @@ public class RCPGenerator {
     }
 
     /** Point on a circle. */
-    private class Vertex implements Comparable<Vertex> {
+    public class Vertex implements Comparable<Vertex> {
 
         public double x, y, radius;
         public double angle, setangle;
@@ -385,7 +371,7 @@ public class RCPGenerator {
     }
 
     /** Circle. */
-    private class Poly extends Vertex {
+    public class Poly extends Vertex {
 
         public int sides;
         public Vertex[] vertices;
@@ -446,6 +432,7 @@ public class RCPGenerator {
             if (!this.overlaps(o))
                 return false;
 
+            //  if there are any intersections, they overlap
             int len = this.vertices.length;
             for (int i = 0; i < len; i++)
                 for (int j = 0; j < o.vertices.length; j++)
@@ -457,7 +444,7 @@ public class RCPGenerator {
                         o.vertices[(j + 1) % o.vertices.length].y))
                             return true;
 
-            //  this is a point in polygon problem which is solved by ray
+            //  this is the point in the polygon problem which is solved by ray
             //  tracing.
 
             //  check if o is inside this by counting ray traces to 0. If it's
@@ -540,8 +527,8 @@ public class RCPGenerator {
                 coors[a] = new int[p.vertices.length][];
                 for (int b = 0; b < p.vertices.length; b++) {
                     coors[a][b] = new int[]{
-                            (int) p.vertices[b].x,
-                            (int) p.vertices[b].y
+                            (int) Math.round(p.vertices[b].x),
+                            (int) Math.round(p.vertices[b].y)
                         };
                 }
             }
