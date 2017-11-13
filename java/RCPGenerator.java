@@ -2,7 +2,7 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Iterator;
-import java.awt.geom.Line2D;
+//import java.awt.geom.Line2D;
 
 /**
  * Generates a random field of <b>convex</b> polygons.
@@ -112,6 +112,7 @@ public class RCPGenerator {
 
         System.out.println("Shapes generated: " + shapes.size());
 
+        /*
         //  perform a tight fit of all polygons, expanding the radii
         for (Poly s : shapes) {
             double radi = s.radius;
@@ -121,6 +122,7 @@ public class RCPGenerator {
                     !strongIsOnMap(s); setr--)
                 s.grow(setr);
         }
+        */
 
         //  prep the data for export
         Converter c = new Converter(shapes);
@@ -302,7 +304,7 @@ public class RCPGenerator {
      * @return true if they're approximately equal
      */
     public static boolean doubleEquals(double a, double b) {
-        return Math.abs(a - b) < 0.5;
+        return Math.abs(a - b) < 0.001;
     }
 
     /** Point on a circle. */
@@ -424,6 +426,7 @@ public class RCPGenerator {
                                 o.vertices[j].x, o.vertices[j].y,
                                 o.vertices[(j + 1) % o.vertices.length].x,
                                 o.vertices[(j + 1) % o.vertices.length].y)) {
+                        /*
                         System.out.printf(
                                 "(%.0f,%.0f), (%.0f,%.0f) to (%.0f,%.0f), (%.0f,%.0f)\n",
                                 vertices[i].x, vertices[i].y,
@@ -439,6 +442,7 @@ public class RCPGenerator {
                                 o.vertices[j].x, o.vertices[j].y,
                                 o.vertices[(j + 1) % o.vertices.length].x,
                                 o.vertices[(j + 1) % o.vertices.length].y);
+                        */
                         return true;
                     }
                 }
@@ -450,14 +454,14 @@ public class RCPGenerator {
             //  check if o is inside this by counting ray traces to 0. If it's
             //  odd, it's inside. If even, it's outside
             int intersections = rayIntersections(this, o);
-            System.out.println("o inside this: " + intersections);
+            //System.out.println("o inside this: " + intersections);
             if (intersections % 2 == 1)
                 return true;
 
             //return false;
             //  check if this is inside o
             intersections = rayIntersections(o, this);
-            System.out.println("this inside o: " + intersections);
+            //System.out.println("this inside o: " + intersections);
             return (intersections % 2 == 1);
             /*
             return !(rayIntersections(this, o) == 0 &&
@@ -591,43 +595,22 @@ public class RCPGenerator {
             double x4, double y4) {
 
         double a1, b1, a2, b2, p;
-        //  step zero: sort for "less than"s
-        if (x1 > x2) {
-            double t = x1;
-            x1 = x2;
-            x2 = t;
-        }
-        if (x3 > x4) {
-            double t = x3;
-            x3 = x4;
-            x4 = t;
-        }
-        if (y1 > y2) {
-            double t = y1;
-            y1 = y2;
-            y2 = t;
-        }
-        if (y3 > y4) {
-            double t = y3;
-            y3 = y4;
-            y4 = t;
-        }
+
+        //System.out.printf("(%.0f, %.0f), (%.0f, %.0f) and (%.0f, %.0f), (%.0f, %.0f)\n", x1, y1, x2, y2, x3, y3, x4, y4);
         
         //  step one: check vertical lines
         if (doubleEquals(x1, x2) && doubleEquals(x3, x4)) {
-            System.out.println("vertical");
             if (!doubleEquals(x1, x3))
                 return false;
             //  check if their heights overlap
-            return y4 > y1 || y2 > y3;
+            return !(Math.max(y1, y2) < Math.min(y3, y4) ||
+                    Math.max(y3, y4) < Math.min(y1, y2));
         } else if (doubleEquals(x1, x2)) {
-            System.out.println("one is vertical");
             a2 = (y4 - y3) / (x4 - x3);
             b2 = y3 - a2 * x3;
             p = a2 * x1 + b2;
             return isOnLine(p, y1, y2) && isOnLine(p, y3, y4);
         } else if (doubleEquals(x3, x4)) {
-            System.out.println("one is vertical");
             a1 = (y2 - y1) / (x2 - x1);
             b1 = y1 - a1 * x1;
             p = a1 * x3 + b1;
@@ -642,9 +625,10 @@ public class RCPGenerator {
 
         //  step three: check if lines are parallel
         if (doubleEquals(a1, a2)) {
-            System.out.println("parallel");
             if (doubleEquals(b1, b2))
-                return x4 > x1 || x2 > x3;
+                //return x4 > x1 || x2 > x3;
+                return !(Math.max(y1, y2) < Math.min(y3, y4) ||
+                    Math.max(y3, y4) < Math.min(y1, y2));
             return false;
         }
 
