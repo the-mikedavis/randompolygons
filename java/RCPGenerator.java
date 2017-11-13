@@ -2,6 +2,7 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Iterator;
+import java.awt.geom.Line2D;
 
 /**
  * Generates a random field of <b>convex</b> polygons.
@@ -80,7 +81,7 @@ public class RCPGenerator {
      * start, and goal properties.
      */
     public boolean render (int count) {
-        double targetDensity = 0.4;
+        double targetDensity = 0.38;
         //  start with an enforced minimum of 8
         count = count > 0 ? count : 8;
 
@@ -94,7 +95,10 @@ public class RCPGenerator {
 
         //  create as many circles
         //  as the specified number of shapes
+        //int iters = 0;
         do {
+            if (shapes.size() > 50)
+                shapes.clear();
             Poly p;
             //  create a new point until it's free from other circles
             do {
@@ -106,12 +110,15 @@ public class RCPGenerator {
             shapes.add(p);
         } while (density(shapes) < targetDensity);
 
+        System.out.println("Shapes generated: " + shapes.size());
+
         //  perform a tight fit of all polygons, expanding the radii
         for (Poly s : shapes) {
+            double radi = s.radius;
             s.grow(2 * s.radius);
-            for (double setr = s.radius; 
-                    isStrongContained(shapes, s) ||
-                    !strongIsOnMap(s); setr -= 2)
+            double setr;
+            for (setr = s.radius; isStrongContained(shapes, s) ||
+                    !strongIsOnMap(s); setr--)
                 s.grow(setr);
         }
 
@@ -289,13 +296,13 @@ public class RCPGenerator {
 
     /**
      * Checks if two doubles are approximately equal.
-     * This is done with the standard |a - b| &gt; epsillon.
+     * This is done with the standard |a - b| &lt; epsillon.
      * @param a the first double
      * @param b the second dobule
      * @return true if they're approximately equal
      */
     public static boolean doubleEquals(double a, double b) {
-        return Math.abs(a - b) > 0.5;
+        return Math.abs(a - b) < 0.5;
     }
 
     /** Point on a circle. */
@@ -344,10 +351,11 @@ public class RCPGenerator {
     }
 
     /** Circle. */
-    public class Poly extends Vertex {
+    public class Poly {
 
         public int sides;
         public Vertex[] vertices;
+        public double x, y, radius;
 
         /**
          * Creates a new circle.
@@ -356,7 +364,9 @@ public class RCPGenerator {
          * @param   r   radius of the circle
          */
         public Poly (double x, double y, double r) {
-            super(x, y, r);
+            this.x = x;
+            this.y = y;
+            this.radius = r;
             this.sides = (int) (Math.random() * (7 - 3)) + 3;
             this.vertices = new Vertex[this.sides];
         }
@@ -405,28 +415,50 @@ public class RCPGenerator {
 
             //  if there are any intersections, they overlap
             int len = this.vertices.length;
-            for (int i = 0; i < len; i++)
-                for (int j = 0; j < o.vertices.length; j++)
+            for (int i = 0; i < len; i++) {
+                for (int j = 0; j < o.vertices.length; j++) {
                     if (RCPGenerator.segmentsIntersect(
                                 vertices[i].x, vertices[i].y,
                                 vertices[(i + 1) % len].x,
                                 vertices[(i + 1) % len].y,
                                 o.vertices[j].x, o.vertices[j].y,
                                 o.vertices[(j + 1) % o.vertices.length].x,
-                                o.vertices[(j + 1) % o.vertices.length].y))
+                                o.vertices[(j + 1) % o.vertices.length].y)) {
+                        System.out.printf(
+                                "(%.0f,%.0f), (%.0f,%.0f) to (%.0f,%.0f), (%.0f,%.0f)\n",
+                                vertices[i].x, vertices[i].y,
+                                vertices[(i + 1) % len].x,
+                                vertices[(i + 1) % len].y,
+                                o.vertices[j].x, o.vertices[j].y,
+                                o.vertices[(j + 1) % o.vertices.length].x,
+                                o.vertices[(j + 1) % o.vertices.length].y);
+                        assert Line2D.linesIntersect(
+                                vertices[i].x, vertices[i].y,
+                                vertices[(i + 1) % len].x,
+                                vertices[(i + 1) % len].y,
+                                o.vertices[j].x, o.vertices[j].y,
+                                o.vertices[(j + 1) % o.vertices.length].x,
+                                o.vertices[(j + 1) % o.vertices.length].y);
                         return true;
+                    }
+                }
+            }
 
             //  this is the point in the polygon problem which is solved by ray
             //  tracing. this checks for containment of one polygon by another.
 
             //  check if o is inside this by counting ray traces to 0. If it's
             //  odd, it's inside. If even, it's outside
-            if (rayIntersections(this, o) % 2 == 1)
+            int intersections = rayIntersections(this, o);
+            System.out.println("o inside this: " + intersections);
+            if (intersections % 2 == 1)
                 return true;
 
             //return false;
             //  check if this is inside o
-            return (rayIntersections(o, this) % 2 == 1);
+            intersections = rayIntersections(o, this);
+            System.out.println("this inside o: " + intersections);
+            return (intersections % 2 == 1);
             /*
             return !(rayIntersections(this, o) == 0 &&
                 rayIntersections(o, this) == 0);
@@ -583,16 +615,19 @@ public class RCPGenerator {
         
         //  step one: check vertical lines
         if (doubleEquals(x1, x2) && doubleEquals(x3, x4)) {
+            System.out.println("vertical");
             if (!doubleEquals(x1, x3))
                 return false;
             //  check if their heights overlap
             return y4 > y1 || y2 > y3;
         } else if (doubleEquals(x1, x2)) {
+            System.out.println("one is vertical");
             a2 = (y4 - y3) / (x4 - x3);
             b2 = y3 - a2 * x3;
             p = a2 * x1 + b2;
             return isOnLine(p, y1, y2) && isOnLine(p, y3, y4);
         } else if (doubleEquals(x3, x4)) {
+            System.out.println("one is vertical");
             a1 = (y2 - y1) / (x2 - x1);
             b1 = y1 - a1 * x1;
             p = a1 * x3 + b1;
@@ -607,6 +642,7 @@ public class RCPGenerator {
 
         //  step three: check if lines are parallel
         if (doubleEquals(a1, a2)) {
+            System.out.println("parallel");
             if (doubleEquals(b1, b2))
                 return x4 > x1 || x2 > x3;
             return false;
@@ -621,13 +657,14 @@ public class RCPGenerator {
 
     /**
      * Checks if a point is on a line. This must be a linear path (non-
-     * quadratic, cubic, etc.), and this method assumes that x1 &lt; x2.
+     * quadratic, cubic, etc.).
      * @param p0 the point
      * @param x1 the left segment endpoint
      * @param x2 the right segment endpoint
      */
     public static boolean isOnLine (double p0, double x1, double x2) {
-        return x1 < p0 && p0 < x2;
+        return Math.min(x1, x2) < p0 && p0 < Math.max(x1, x2);
+        //return x1 < p0 && p0 < x2;
     }
 
 }
