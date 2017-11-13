@@ -26,37 +26,6 @@ int[] goalCoor = generator.getGoal();
  * I recommend using this triple array to create objects (object
  * shape, object vertex, object edge, etc), but the array is
  * usable in its raw form.
- * <hr>
- * The method this tool employs is:
- *
- * 1. Create a 2D plane with width and height.
- * 2. Create a circle with an arbitrary radius.
- * 3. For the specified count of shapes, add a circle with
- * a minimum radius and a random "sides" property.
- * 4. Make sure that new circle is not contained or intersected
- * by another circle on the map. If so, give it new random
- * coordinates until it's free.
- * 5. Expand the radius of that node to a random amount.
- * 6. If that circle and another overlap, shrink the radius by
- * a fixed amount until it fits.
- * 7. Repeat until the shape array has filled with circles
- * to the amount specified.
- * <hr>
- * Now a field of random non-overlapping circles has been
- * generated.
- * For each circle:
- * Create a vertex which is not outside the map nor too close
- * to another vertex on that shape. The "minimum" distance is
- * the radius of the circle, but that can be overriden if a
- * point cannot be created (results in an infinite loop).
- * The "minimum" distance makes the convex shapes larger
- * when not positioned at the edges of the plane. Without it,
- * the shape space comes off as stringy and awkward.
- * Then the list of vertices is sorted, which is highly important.
- * The vertices must be sorted in either a clockwise or 
- * anticlockwise nature so that when the edges or each shape
- * is drawn, a convex polygon is formed without any edges
- * crossing over eachother. This enforces convex-ness.
  *
  * @author Michael C. Davis
  *
@@ -325,8 +294,8 @@ public class RCPGenerator {
      * @param b the second dobule
      * @return true if they're approximately equal
      */
-    public static boolean doublesEqual(double a, double b) {
-        return Math.abs(a - b) < 0.5;
+    public static boolean doubleEquals(double a, double b) {
+        return Math.abs(a - b) > 0.5;
     }
 
     /** Point on a circle. */
@@ -485,31 +454,6 @@ public class RCPGenerator {
                 }
             }
             return intersections;
-        }
-
-        public boolean intersectsOnEndpoint(double x1, double y1,
-                double x2, double y2, double x3, double y3,
-                double x4, double y4) {
-            double m1, m2, b1, b2;
-            if (x2 - x1 == 0)
-                m1 = 1000000D;
-            else
-                m1 = ((y2 - y1) / (x2 - x1));
-            b1 = (y1 - m1 * x1);
-
-            if (x4 - x3 == 0)
-                m2 = 1000000D;
-            else
-                m2 = ((y4 - y3) / (x4 - x3));
-            b2 = (y3 - m2 * x3);
-
-            double x = (-(b2 - b1)) / (m2 - m1);
-
-            return doubleEquals(x, x1) || doubleEquals(x, x2);
-        }
-
-        public boolean doubleEquals(double a, double b) {
-            return Math.abs(a - b) < 0.5;
         }
 
         public double[][] reduction () {
@@ -687,10 +631,6 @@ public class RCPGenerator {
      */
     public static boolean isOnLine (double p0, double x1, double x2) {
         return x1 < p0 && p0 < x2;
-    }
-
-    public static boolean doubleEquals(double a, double b) {
-        return Math.abs(a - b) > 0.5;
     }
 
 }
