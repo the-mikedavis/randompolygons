@@ -267,14 +267,6 @@ public class RCPGenerator {
      * @param   x   x coordinate
      * @param   y   y coordinate
      */
-    private boolean pointIsntOnMap(int x, int y) {
-        return !(x > 0 && x < width && y > 0 && y < height);
-    }
-
-    /** Checks if a point is on the 2D plane.
-     * @param   x   x coordinate
-     * @param   y   y coordinate
-     */
     private boolean pointIsntOnMap(double x, double y) {
         return x < 5D || x > (double) (width - 5) || 
             y < 5D || y > (double) (height - 5);
@@ -458,7 +450,6 @@ public class RCPGenerator {
                                 o.vertices[(j + 1) % o.vertices.length].y))
                         return true;
 
-            /*
             //  this is the point in the polygon problem which is solved by ray
             //  tracing. this checks for containment of one polygon by another.
 
@@ -467,12 +458,13 @@ public class RCPGenerator {
             if (rayIntersections(this, o) % 2 == 1)
                 return true;
 
-            return false;
+            //return false;
             //  check if this is inside o
-            //return (rayIntersections(o, this) % 2 == 1);
-            */
+            return (rayIntersections(o, this) % 2 == 1);
+            /*
             return !(rayIntersections(this, o) == 0 &&
                 rayIntersections(o, this) == 0);
+                */
         }
 
         //  use statically
