@@ -80,7 +80,7 @@ public class RCPGenerator {
      * start, and goal properties.
      */
     public boolean render (int count) {
-        double targetDensity = 0.35;
+        double targetDensity = 0.4;
         //  start with an enforced minimum of 8
         count = count > 0 ? count : 8;
 
@@ -384,16 +384,13 @@ public class RCPGenerator {
         }
 
         /**
-         * Checks equality of two Poly instances. This is a comparison of
-         * x, y, and radius.
+         * Checks equality of two Poly instances. This is a comparison of array
+         * references.
          * @param   o   the other circle
-         * @return  true if they have the same coordinates
-         * and radii
+         * @return  true if they have the same vertex array
          */
         public boolean equals (Poly o) {
-            return this.x == o.x &&
-                this.y == o.y &&
-                this.radius == o.radius;
+            return this.vertices == o.vertices;
         }
 
         /** Check the overlap of two polygons, not circles.
