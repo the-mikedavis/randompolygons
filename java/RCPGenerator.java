@@ -138,7 +138,6 @@ public class RCPGenerator {
         } while (density(shapes) < targetDensity);
 
         //  perform a tight fit of all polygons, expanding the radii
-        /*
         for (Poly s : shapes) {
             s.grow(2 * s.radius);
             for (double setr = s.radius; 
@@ -146,7 +145,6 @@ public class RCPGenerator {
                     !strongIsOnMap(s); setr -= 2)
                 s.grow(setr);
         }
-        */
 
         //  prep the data for export
         Converter c = new Converter(shapes);
@@ -481,12 +479,6 @@ public class RCPGenerator {
         public int rayIntersections (Poly a, Poly b) {
             int intersections = 0;
             int len = a.vertices.length;
-            //  get the angle to the center of a from b
-            double angle = Math.atan2(a.y - b.y, a.x - b.x);
-            //  reverse that angle
-            angle += Math.PI;
-            double targetX = width * Math.cos(angle) + b.x;
-            double targetY = width * Math.sin(angle) + b.y;
 
             for (int i = 0; i < len; i++) {
                 //  check intersection of...
@@ -496,29 +488,8 @@ public class RCPGenerator {
                             a.vertices[(i + 1) % len].x,
                             a.vertices[(i + 1) % len].y,
                             //  vs the line from b's center to (0,0)
-                            b.x, b.y, targetX, targetY)) {
-                    intersections++;
-                    /*
-                //  check intersection of...
-                if (Line2D.linesIntersect(
-                            //  the edges of a
-                            a.vertices[i].x, a.vertices[i].y,
-                            a.vertices[(i + 1) % len].x,
-                            a.vertices[(i + 1) % len].y,
-                            //  vs the line from b's center to (0,0)
                             b.x, b.y, 0D, 0D)) {
                     intersections++;
-                    //  check for an endpoint intersection half of the time
-                    /*
-                    if (intersections % 2 == 0 && intersectsOnEndpoint(
-                                a.vertices[i].x, a.vertices[i].y,
-                                a.vertices[(i + 1) % len].x,
-                                a.vertices[(i + 1) % len].y,
-                                b.x, b.y, 0D, 0D)) {
-                        intersections--;
-                        System.out.println("Intersection on endpoint");
-                    }
-                    */
                 }
             }
             return intersections;
