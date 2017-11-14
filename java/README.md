@@ -1,5 +1,9 @@
 # Java-Based Random Convex Polygon Field Generator
 
+N.B.: if you need to check for line segments intersecting, **do not** use
+`Lines2D.linesIntersect`. Instead, use `Polygen.segmentsIntersect` from this
+file. `Lines2D.linesIntersect` does not cover some edge cases.
+
 How to use:
 
 ```java
@@ -100,6 +104,3 @@ for a = 0 to shapes.length (exclusive)
         draw edge from vertices[b] to vertices[(b + 1) % vertices.length]
 ```
 
-Also, if you need to check for line segments intersecting, **do not** use
-`Lines2D.linesIntersect`. Instead, use `Polygen.segmentsIntersect` from this
-file. `Lines2D.linesIntersect` does not cover some edge cases.
