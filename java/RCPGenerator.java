@@ -2,7 +2,6 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Iterator;
-//import java.awt.geom.Line2D;
 
 /**
  * Generates a random field of <b>convex</b> polygons.
@@ -112,17 +111,20 @@ public class RCPGenerator {
 
         System.out.println("Shapes generated: " + shapes.size());
 
-        /*
         //  perform a tight fit of all polygons, expanding the radii
         for (Poly s : shapes) {
+            boolean grown = false;
             double radi = s.radius;
             s.grow(2 * s.radius);
             double setr;
             for (setr = s.radius; isStrongContained(shapes, s) ||
-                    !strongIsOnMap(s); setr--)
+                    !strongIsOnMap(s); setr -= 2) {
                 s.grow(setr);
+                grown = true;
+            }
+            //  shrink one more
+            if (grown) s.grow(s.radius - 1);
         }
-        */
 
         //  prep the data for export
         Converter c = new Converter(shapes);
@@ -304,7 +306,7 @@ public class RCPGenerator {
      * @return true if they're approximately equal
      */
     public static boolean doubleEquals(double a, double b) {
-        return Math.abs(a - b) < 0.001;
+        return Math.abs(a - b) < 0.0001;
     }
 
     /** Point on a circle. */
@@ -417,64 +419,43 @@ public class RCPGenerator {
 
             //  if there are any intersections, they overlap
             int len = this.vertices.length;
-            for (int i = 0; i < len; i++) {
-                for (int j = 0; j < o.vertices.length; j++) {
+            for (int i = 0; i < len; i++)
+                for (int j = 0; j < o.vertices.length; j++)
                     if (RCPGenerator.segmentsIntersect(
                                 vertices[i].x, vertices[i].y,
                                 vertices[(i + 1) % len].x,
                                 vertices[(i + 1) % len].y,
                                 o.vertices[j].x, o.vertices[j].y,
                                 o.vertices[(j + 1) % o.vertices.length].x,
-                                o.vertices[(j + 1) % o.vertices.length].y)) {
-                        /*
-                        System.out.printf(
-                                "(%.0f,%.0f), (%.0f,%.0f) to (%.0f,%.0f), (%.0f,%.0f)\n",
-                                vertices[i].x, vertices[i].y,
-                                vertices[(i + 1) % len].x,
-                                vertices[(i + 1) % len].y,
-                                o.vertices[j].x, o.vertices[j].y,
-                                o.vertices[(j + 1) % o.vertices.length].x,
-                                o.vertices[(j + 1) % o.vertices.length].y);
-                        assert Line2D.linesIntersect(
-                                vertices[i].x, vertices[i].y,
-                                vertices[(i + 1) % len].x,
-                                vertices[(i + 1) % len].y,
-                                o.vertices[j].x, o.vertices[j].y,
-                                o.vertices[(j + 1) % o.vertices.length].x,
-                                o.vertices[(j + 1) % o.vertices.length].y);
-                        */
+                                o.vertices[(j + 1) % o.vertices.length].y))
                         return true;
-                    }
-                }
-            }
 
-            //  this is the point in the polygon problem which is solved by ray
-            //  tracing. this checks for containment of one polygon by another.
-
-            //  check if o is inside this by counting ray traces to 0. If it's
-            //  odd, it's inside. If even, it's outside
-            int intersections = rayIntersections(this, o);
-            //System.out.println("o inside this: " + intersections);
-            if (intersections % 2 == 1)
+            if (innerCircled(this, o) || innerCircled(o, this))
                 return true;
 
-            //return false;
-            //  check if this is inside o
-            intersections = rayIntersections(o, this);
-            //System.out.println("this inside o: " + intersections);
-            return (intersections % 2 == 1);
-            /*
-            return !(rayIntersections(this, o) == 0 &&
-                rayIntersections(o, this) == 0);
-                */
+            return !(rayIntersections(this, o) == 0 && 
+                    rayIntersections(o, this) == 0);
         }
 
-        //  use statically
-        public int rayIntersections (Poly a, Poly b) {
+        /**
+         * Checks if Poly b is insido Poly a by counting raytraces out from b.
+         * This is to be used statically.
+         * @param a the alleged surrounder.
+         * @param b the alleged insider.
+         * @return the number of intersections of the line from b's center
+         * to a point in the opposite direction of a's center and all of a's
+         * edges.
+         */
+        private int rayIntersections (Poly a, Poly b) {
             int intersections = 0;
             int len = a.vertices.length;
 
-            for (int i = 0; i < len; i++) {
+            double angle = Math.atan2(a.y - b.y, a.x - b.x);
+            angle += Math.PI;
+            double targetX = (width / 2) * Math.cos(angle) + b.x;
+            double targetY = (width / 2) * Math.sin(angle) + b.y;
+
+            for (int i = 0; i < len; i++)
                 //  check intersection of...
                 if (RCPGenerator.segmentsIntersect(
                             //  the edges of a
@@ -482,11 +463,89 @@ public class RCPGenerator {
                             a.vertices[(i + 1) % len].x,
                             a.vertices[(i + 1) % len].y,
                             //  vs the line from b's center to (0,0)
-                            b.x, b.y, 0D, 0D)) {
+                            b.x, b.y, targetX, targetY))
                     intersections++;
+
+            return intersections;
+        }
+
+        /**
+         * Checks if b is within a's smallest inscribed circle.
+         * To be used statically.
+         * @param a the alleged surrounder.
+         * @param b the alleged insider.
+         * @return true if b is within a's smallest inscribed circle.
+         */
+        private boolean innerCircled(Poly a, Poly b) {
+            double radius = a.innerRadius();
+            //  if the center is inside, it's circled
+            if (Math.hypot(b.x - (a.x + radius), b.y - (a.y + radius)) < radius)
+                return true;
+            //  if the other vertices are inside, it's circled
+            for (int i = 0; i < b.vertices.length; i++)
+                if (Math.hypot(b.vertices[i].x - (a.x + radius),
+                            b.vertices[i].y - (a.y + radius)) < radius)
+                    return true;
+            return false;
+        }
+
+        /**
+         * Compute the radius of the largest enclosed circle inside the
+         * polygon.
+         */
+        private double innerRadius () {
+            //  find the longest edge, which is closest to the center.
+            double max = Double.NEGATIVE_INFINITY;
+            int index = 0;
+            int len = this.vertices.length;
+            for (int i = 0; i < len; i++) {
+                double x1 = this.vertices[i].x,
+                       y1 = this.vertices[i].y,
+                       x2 = this.vertices[(i + 1) % len].x,
+                       y2 = this.vertices[(i + 1) % len].y;
+                double hypot = Math.hypot(x1 - x2, y1 - y2);
+                if (hypot > max) {
+                    max = hypot;
+                    index = i;
                 }
             }
-            return intersections;
+            //  write out the coordinates of the longest edge
+            double x1 = this.vertices[index].x,
+                   y1 = this.vertices[index].y,
+                   x2 = this.vertices[(index + 1) % len].x,
+                   y2 = this.vertices[(index + 1) % len].y;
+
+            double radius = 0d;
+            //  handle the edge case that the longest edge is vertical
+            if (doubleEquals(x1, x2)) {
+                //  the radius line will be horizontal
+                radius = Math.abs(this.x - x1);
+            }
+            //  handle the edge case that the longest edge is flat
+            else if (doubleEquals(y1, y2)) {
+                //  the radius line will be vertical
+                radius = Math.abs(this.y - y1);
+            }
+            //  handle the general case (both will be slanted)
+            else {
+                //  build the equation of the longest edge
+                double m1 = (y2 - y1) / (x2 - x1),
+                       b1 = y1 - m1 * x1;
+                //  build the inverse equation of that
+                double m2, b2;
+                //  the slope is (- 1 / m)
+                m2 = -1 / m1;
+                //  the y intercept can be found by using the coordinates of a's
+                //  center
+                b2 = this.y - (m2 * this.x);
+                //  compute the intersection point
+                double intersectionX = - (b1 - b2) / (m1 - m2);
+                double intersectionY = m1 * intersectionX + b1;
+                //  compute the length
+                radius = Math.hypot(this.x - intersectionX,
+                        this.y - intersectionY);
+            }
+            return radius;
         }
 
         public double[][] reduction () {
@@ -508,20 +567,21 @@ public class RCPGenerator {
             };
         }
 
-    /**
-     * Finds the area of the polygon. This is found given a simple formula
-     * which is O(V).
-     * @return the area of this polygon instance.
-     */
-    public double area () {
-        double sum = 0d;
-        int l = vertices.length;
-        for (int i = 0; i < l; i++)
-            sum += vertices[i].x * vertices[(i + 1) % l].y - 
-                vertices[i].y * vertices[(i + 1) % l].x;
-        return Math.abs(sum / 2);
+        /**
+         * Finds the area of the polygon. This is found given a simple formula
+         * which is O(V).
+         * @return the area of this polygon instance.
+         */
+        public double area () {
+            double sum = 0d;
+            int l = vertices.length;
+            for (int i = 0; i < l; i++)
+                sum += vertices[i].x * vertices[(i + 1) % l].y - 
+                    vertices[i].y * vertices[(i + 1) % l].x;
+            return Math.abs(sum / 2);
+        }
+
     }
-}
 
     /**
      * Convert the object-stored vertex and circle info int int[][][].
@@ -579,7 +639,7 @@ public class RCPGenerator {
     }
 
     /**
-     * Checks if two lines intersect robustly.
+     * Checks if two line segments intersect, robustly.
      * @param x1 the first x coordinate of the first line
      * @param y1 the first y coordinate of the first line
      * @param x2 the second x coordinate of the first line
@@ -596,21 +656,22 @@ public class RCPGenerator {
 
         double a1, b1, a2, b2, p;
 
-        //System.out.printf("(%.0f, %.0f), (%.0f, %.0f) and (%.0f, %.0f), (%.0f, %.0f)\n", x1, y1, x2, y2, x3, y3, x4, y4);
-        
         //  step one: check vertical lines
         if (doubleEquals(x1, x2) && doubleEquals(x3, x4)) {
+
             if (!doubleEquals(x1, x3))
                 return false;
             //  check if their heights overlap
             return !(Math.max(y1, y2) < Math.min(y3, y4) ||
                     Math.max(y3, y4) < Math.min(y1, y2));
         } else if (doubleEquals(x1, x2)) {
+
             a2 = (y4 - y3) / (x4 - x3);
             b2 = y3 - a2 * x3;
             p = a2 * x1 + b2;
             return isOnLine(p, y1, y2) && isOnLine(p, y3, y4);
         } else if (doubleEquals(x3, x4)) {
+
             a1 = (y2 - y1) / (x2 - x1);
             b1 = y1 - a1 * x1;
             p = a1 * x3 + b1;
@@ -626,7 +687,6 @@ public class RCPGenerator {
         //  step three: check if lines are parallel
         if (doubleEquals(a1, a2)) {
             if (doubleEquals(b1, b2))
-                //return x4 > x1 || x2 > x3;
                 return !(Math.max(y1, y2) < Math.min(y3, y4) ||
                     Math.max(y3, y4) < Math.min(y1, y2));
             return false;
@@ -647,8 +707,7 @@ public class RCPGenerator {
      * @param x2 the right segment endpoint
      */
     public static boolean isOnLine (double p0, double x1, double x2) {
-        return Math.min(x1, x2) < p0 && p0 < Math.max(x1, x2);
-        //return x1 < p0 && p0 < x2;
+        return Math.min(x1, x2) <= p0 && p0 <= Math.max(x1, x2);
     }
 
 }
