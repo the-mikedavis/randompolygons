@@ -70,7 +70,7 @@ public class Polygen {
      * @return true when the render is complete.
      */
     public boolean render () {
-        return render(0.38);
+        return render(0.5);
     }
 
     /**
@@ -89,7 +89,7 @@ public class Polygen {
 
         do {
             //  start over if the building is too slow
-            if (shapes.size() > 50)
+            if (shapes.size() > 35)
                 shapes.clear();
             Poly p;
             //  create a new point until it's free from other circles
