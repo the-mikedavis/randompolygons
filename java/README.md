@@ -3,13 +3,13 @@
 How to use:
 
 ```java
-RCPGenerator gen = new RCPGenerator(width, height);
-boolean success = gen.render();
-// or just gen.render();
+Polygen gen = new Polygen();
+gen.render();
 int[][][] coordinates = gen.getCoordinates();
 int[] start = gen.getStart();
 int[] goal = gen.getGoal();
 ```
+
 
 The output of the coordinates looks something like this:
 
@@ -32,7 +32,8 @@ field
     ...
 ``` 
 
-Where the shapes represent a set of vertices connected by edges and the vertices represent a pair of integers for x and y value.
+Where the shapes represent a set of vertices connected by edges and the 
+vertices represent a pair of integers for x and y value.
 
 Specifically, this is an example
 
@@ -89,12 +90,16 @@ int[][][] coordinates = new int[][][]{
     }
 };
 ```
-Moreover, the vertices are already in sorted order (clockwise), which means that you can draw a shape using an implementation of this psuedocode:
+Moreover, the vertices are already in sorted order (clockwise), which means
+that you can draw a shape using an implementation of this psuedocode:
 
 ```
 //assuming 0 indexing
-for a = 0 to shapes.length
-    for b = 0 to the shape's vertices.length
-        draw edge from vertices[b] to vertices[b + 1 == vertices.length ? 0 : b + 1]
+for a = 0 to shapes.length (exclusive)
+    for b = 0 to the shape's vertices.length (inclusive)
+        draw edge from vertices[b] to vertices[(b + 1) % vertices.length]
 ```
 
+Also, if you need to check for line segments intersecting, **do not** use
+`Lines2D.linesIntersect`. Instead, use `Polygen.segmentsIntersect` from this
+file. `Lines2D.linesIntersect` does not cover some edge cases.

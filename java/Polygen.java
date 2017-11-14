@@ -6,29 +6,30 @@ import java.util.Iterator;
 /**
  * Generates a random field of <b>convex</b> polygons.
  *
- * How to use:
-{@code: 
-Polygen generator = new Polygen();
-generator.render();
-int[][][] shapeCoordinates = generator.getCoordinates();
-int[] startCoor = generator.getStart();
-int[] goalCoor = generator.getGoal();
-}
- *
  * Coordinates come in the form of <code>int[]{x, y}</code>.
  * Each vertex of a shape has an array of x and y. Each shape has
  * an array of vertices (<code>int[][]</code>). The whole field
- * which is returned by <code>generator.getCoordinates()<code>.
+ * which is returned by <code>generator.getCoordinates()</code>
  * is an array of shapes (<code>int[][][]</code>).
  *
  * I recommend using this triple array to create objects (object
  * shape, object vertex, object edge, etc), but the array is
  * usable in its raw form.
+ * <br>
+ * How to use:
+ * <ol>
+ * <li><code>Polygen generator = new Polygen();</code></li>
+ * <li><code>generator.render();</code></li>
+ * <li><code>int[][][] shapeCoordinates = generator.getCoordinates();</code>
+ * </li>
+ * <li><code>int[] startCoor = generator.getStart();</code></li>
+ * <li><code>int[] goalCoor = generator.getGoal();</code></li>
+ * </ol>
+ * <br>
+ * Authored on vim
+ * (vim &gt; IDE).
  *
  * @author Michael C. Davis
- *
- * authored on vim
- * vim &gt; IDE
  */
 public class Polygen {
 
@@ -162,6 +163,7 @@ public class Polygen {
     /** Generates a random integer between [min, max] inclusive.
      * @param   min minimum bound
      * @param   max maximum bound, which can be produced
+     * @return a random integer between [min, max] inclusive.
      */
     public static int randomInt (int min, int max) {
         min = min;
@@ -181,7 +183,8 @@ public class Polygen {
     }
 
     /**
-     * Checks if two line segments intersect, robustly.
+     * Checks if two line segments intersect, including the endpoints.
+     * Use this instead of <code>Line2D.linesIntersect</code>.
      * @param x1 the first x coordinate of the first line
      * @param y1 the first y coordinate of the first line
      * @param x2 the second x coordinate of the first line
