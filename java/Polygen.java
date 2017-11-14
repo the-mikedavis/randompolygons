@@ -6,12 +6,10 @@ import java.util.Iterator;
 /**
  * Generates a random field of <b>convex</b> polygons.
  *
- * RCP stands for Random Convex Polygon.
- *
  * How to use:
 {@code: 
-RCPGenerator generator = new RCPGenerator(width, height);
-generator.render(n);
+Polygen generator = new Polygen();
+generator.render();
 int[][][] shapeCoordinates = generator.getCoordinates();
 int[] startCoor = generator.getStart();
 int[] goalCoor = generator.getGoal();
@@ -32,17 +30,17 @@ int[] goalCoor = generator.getGoal();
  * authored on vim
  * vim &gt; IDE
  */
-public class RCPGenerator {
+public class Polygen {
 
     private int width, height, maxr, minr;
     private int[][][] coordinates = new int[0][][];
     private int[] start = new int[0], goal = new int[0];
 
     /**
-     * Creates a generator with default 500, 300 dimensions.
+     * Creates a generator with default 600, 350 dimensions.
      */
-    public RCPGenerator () {
-        this(500, 300);
+    public Polygen () {
+        this(600, 350);
     }
 
     /**
@@ -50,7 +48,7 @@ public class RCPGenerator {
      * dimensions.
      * @param   width   width and height of the 2D plane
      */
-    public RCPGenerator (int width) {
+    public Polygen (int width) {
         this(width, width);
     }
 
@@ -59,43 +57,37 @@ public class RCPGenerator {
      * @param   width   width of the 2D plane
      * @param   height  height of the 2D plane
      */
-    public RCPGenerator (int width, int height) {
+    public Polygen (int width, int height) {
         this.width = width;
         this.height = height;
     }
 
     /**
-     * Renders a new 2D plane filled with 8 polygons.
-     * @return  a vessel object, with has coordinates,
-     * start, and goal properties.
+     * Renders a new 2D plane filled with polygons up to a density
+     * of 38% polygon. This is a healthy default and should probably
+     * not be messed with.
+     * @return true when the render is complete.
      */
     public boolean render () {
-        return render(8);
+        return render(0.38);
     }
 
     /**
-     * Renders a new 2D plane filled with n polygons.
-     * @param   count   the number of polygons in the field
+     * Renders a new 2D plane filled with polygons up to a specified
+     * density.
+     * @param targetDensity the goal density to take as minimum.
      * @return  true when complete.
      * start, and goal properties.
      */
-    public boolean render (int count) {
-        double targetDensity = 0.38;
-        //  start with an enforced minimum of 8
-        count = count > 0 ? count : 8;
+    public boolean render (double targetDensity) {
 
-        List<Poly> shapes = new ArrayList<Poly>(60);
+        List<Poly> shapes = new ArrayList<Poly>(51);
 
-        //  adjust the min and max radii for the count
-        //  and aspect ratio
-        //maxr = (int) (2 * Math.sqrt(width * height) / count);
         maxr = width / 5;
         minr = width / 45;
 
-        //  create as many circles
-        //  as the specified number of shapes
-        //int iters = 0;
         do {
+            //  start over if the building is too slow
             if (shapes.size() > 50)
                 shapes.clear();
             Poly p;
@@ -114,61 +106,24 @@ public class RCPGenerator {
         //  perform a tight fit of all polygons, expanding the radii
         for (Poly s : shapes) {
             boolean grown = false;
-            double radi = s.radius;
             s.grow(2 * s.radius);
-            double setr;
-            for (setr = s.radius; isStrongContained(shapes, s) ||
+            for (double setr = s.radius; isStrongContained(shapes, s) ||
                     !strongIsOnMap(s); setr -= 2) {
                 s.grow(setr);
                 grown = true;
             }
             //  shrink one more
-            if (grown) s.grow(s.radius - 1);
+            if (grown) s.grow(s.radius - 2);
         }
 
         //  prep the data for export
         Converter c = new Converter(shapes);
-
+        //  export to fields
         coordinates = c.getCoordinates();
         start = c.getStartCoordinates();
         goal = c.getGoalCoordinates();
-
+        //  exit
         return true;
-    }
-
-    public void populateVertices (Poly c) {
-        //  for each side (or vertex, it's the same)
-        for (int i = 0; i < c.sides; i++) {
-            //  provide a way to break out of solutions
-            int whilecount = 0;
-            do {
-                double angle = Math.random() * Math.PI * 2,
-                       x = Math.cos(angle) * c.radius,
-                       y = Math.sin(angle) * c.radius;
-                c.vertices[i] = new Vertex(x + c.x, y + c.y, c.radius, angle);
-                //  break out if the min distance is unsatisfiable
-                if (whilecount++ > 100 &&
-                        !pointIsntOnMap(c.vertices[i].x, c.vertices[i].y))
-                    break;
-                //  repeat while the point isn't on the map or
-                //  it's too close to another vertex
-            } while (pointIsntOnMap(c.vertices[i].x, c.vertices[i].y) ||
-                    isContained(c.vertices, i));
-        }
-        //  apply angle property
-        Double startang = null;
-        for (int i = 0; i < c.vertices.length; i++) {
-            Vertex e = c.vertices[i];
-            double angle = Math.atan2(e.y - c.y, e.x - c.x);
-            if (startang == null)
-                startang = angle;
-            else if (angle < startang)
-                angle += Math.PI * 2;
-            e.angle = angle;
-        }
-
-        //  sort the data
-        Arrays.sort(c.vertices);
     }
 
     /**
@@ -202,6 +157,138 @@ public class RCPGenerator {
         if (start.length == 0)
             render();
         return goal;
+    }
+
+    /** Generates a random integer between [min, max] inclusive.
+     * @param   min minimum bound
+     * @param   max maximum bound, which can be produced
+     */
+    public static int randomInt (int min, int max) {
+        min = min;
+        max = max;
+        return (int) (Math.random() * (max - min + 1) + min);
+    }
+
+    /**
+     * Checks if two doubles are approximately equal.
+     * This is done with the standard |a - b| &lt; epsillon.
+     * @param a the first double
+     * @param b the second dobule
+     * @return true if they're approximately equal
+     */
+    public static boolean doubleEquals(double a, double b) {
+        return Math.abs(a - b) < 0.0001;
+    }
+
+    /**
+     * Checks if two line segments intersect, robustly.
+     * @param x1 the first x coordinate of the first line
+     * @param y1 the first y coordinate of the first line
+     * @param x2 the second x coordinate of the first line
+     * @param y2 the second y coordinate of the first line
+     * @param x3 the first x coordinate of the second line
+     * @param y3 the first y coordinate of the second line
+     * @param x4 the second x coordinate of the second line
+     * @param y4 the second y coordinate of the second line
+     * @return true iff the line segments intersect
+     */
+    public static boolean segmentsIntersect(double x1,
+            double y1, double x2, double y2, double x3, double y3,
+            double x4, double y4) {
+
+        double a1, b1, a2, b2, p;
+
+        //  step one: check vertical lines
+        if (doubleEquals(x1, x2) && doubleEquals(x3, x4)) {
+
+            if (!doubleEquals(x1, x3))
+                return false;
+            //  check if their heights overlap
+            return !(Math.max(y1, y2) < Math.min(y3, y4) ||
+                    Math.max(y3, y4) < Math.min(y1, y2));
+        } else if (doubleEquals(x1, x2)) {
+
+            a2 = (y4 - y3) / (x4 - x3);
+            b2 = y3 - a2 * x3;
+            p = a2 * x1 + b2;
+            return isOnLine(p, y1, y2) && isOnLine(p, y3, y4);
+        } else if (doubleEquals(x3, x4)) {
+
+            a1 = (y2 - y1) / (x2 - x1);
+            b1 = y1 - a1 * x1;
+            p = a1 * x3 + b1;
+            return isOnLine(p, y1, y2) && isOnLine(p, y3, y4);
+        }
+
+        //  step two: build equations.
+        a1 = (y2 - y1) / (x2 - x1);
+        b1 = y1 - a1 * x1;
+        a2 = (y4 - y3) / (x4 - x3);
+        b2 = y3 - a2 * x3;
+
+        //  step three: check if lines are parallel
+        if (doubleEquals(a1, a2)) {
+            if (doubleEquals(b1, b2))
+                return !(Math.max(y1, y2) < Math.min(y3, y4) ||
+                    Math.max(y3, y4) < Math.min(y1, y2));
+            return false;
+        }
+
+        //  step four: find the intersection
+        p = - (b1 - b2) / (a1 - a2);
+
+        //  step five: return if that intersection is on the lines
+        return isOnLine(p, x1, x2) && isOnLine(p, x3, x4);
+    }
+
+    /**
+     * Checks if a point is on a line. This must be a linear path (non-
+     * quadratic, cubic, etc.).
+     * @param p0 the point
+     * @param x1 the left segment endpoint
+     * @param x2 the right segment endpoint
+     */
+    private static boolean isOnLine (double p0, double x1, double x2) {
+        return Math.min(x1, x2) <= p0 && p0 <= Math.max(x1, x2);
+    }
+
+    /**
+     * Give the polygon a set of valid vertices.
+     * @param c the polygon to populate
+     */
+    private void populateVertices (Poly c) {
+        //  for each side (or vertex, it's the same)
+        for (int i = 0; i < c.sides; i++) {
+            //  provide a way to break out of solutions
+            int whilecount = 0;
+            do {
+                double angle = Math.random() * Math.PI * 2,
+                       x = Math.cos(angle) * c.radius,
+                       y = Math.sin(angle) * c.radius;
+                c.vertices[i] = new Vertex(x + c.x, y + c.y, c.radius, angle);
+                //  break out if the min distance is unsatisfiable
+                if (whilecount++ > 100 &&
+                        !pointIsntOnMap(c.vertices[i].x, c.vertices[i].y))
+                    break;
+                //  repeat while the point isn't on the map or
+                //  it's too close to another vertex
+            } while (pointIsntOnMap(c.vertices[i].x, c.vertices[i].y) ||
+                    isContained(c.vertices, i));
+        }
+        //  apply angle property
+        Double startang = null;
+        for (int i = 0; i < c.vertices.length; i++) {
+            Vertex e = c.vertices[i];
+            double angle = Math.atan2(e.y - c.y, e.x - c.x);
+            if (startang == null)
+                startang = angle;
+            else if (angle < startang)
+                angle += Math.PI * 2;
+            e.angle = angle;
+        }
+
+        //  sort the data
+        Arrays.sort(c.vertices);
     }
 
     /** Checks if a vertex is too close to another vertex
@@ -288,29 +375,8 @@ public class RCPGenerator {
         return (int) (Math.random() * (max - min + 1) + min);
     }
 
-    /** Generates a random integer between [min, max] inclusive.
-     * @param   min minimum bound
-     * @param   max maximum bound, which can be produced
-     */
-    public static int randomInt (int min, int max) {
-        min = min;
-        max = max;
-        return (int) Math.round((Math.random() * (max - min + 1) + min));
-    }
-
-    /**
-     * Checks if two doubles are approximately equal.
-     * This is done with the standard |a - b| &lt; epsillon.
-     * @param a the first double
-     * @param b the second dobule
-     * @return true if they're approximately equal
-     */
-    public static boolean doubleEquals(double a, double b) {
-        return Math.abs(a - b) < 0.0001;
-    }
-
     /** Point on a circle. */
-    public class Vertex implements Comparable<Vertex> {
+    private class Vertex implements Comparable<Vertex> {
 
         public double x, y, radius;
         public double angle, setangle;
@@ -355,7 +421,7 @@ public class RCPGenerator {
     }
 
     /** Circle. */
-    public class Poly {
+    private class Poly {
 
         public int sides;
         public Vertex[] vertices;
@@ -421,7 +487,7 @@ public class RCPGenerator {
             int len = this.vertices.length;
             for (int i = 0; i < len; i++)
                 for (int j = 0; j < o.vertices.length; j++)
-                    if (RCPGenerator.segmentsIntersect(
+                    if (Polygen.segmentsIntersect(
                                 vertices[i].x, vertices[i].y,
                                 vertices[(i + 1) % len].x,
                                 vertices[(i + 1) % len].y,
@@ -457,7 +523,7 @@ public class RCPGenerator {
 
             for (int i = 0; i < len; i++)
                 //  check intersection of...
-                if (RCPGenerator.segmentsIntersect(
+                if (Polygen.segmentsIntersect(
                             //  the edges of a
                             a.vertices[i].x, a.vertices[i].y,
                             a.vertices[(i + 1) % len].x,
@@ -492,6 +558,8 @@ public class RCPGenerator {
         /**
          * Compute the radius of the largest enclosed circle inside the
          * polygon.
+         * @return the radius of the smallest enclosed circle inside this
+         * instance of Poly.
          */
         private double innerRadius () {
             //  find the longest edge, which is closest to the center.
@@ -548,6 +616,10 @@ public class RCPGenerator {
             return radius;
         }
 
+        /**
+         * Gets the rectangular flattening of the polygon.
+         * @return the x and y coordinates of the bounding rectangle. 
+         */
         public double[][] reduction () {
             double xmin = 10000D, xmax = -1D, ymin = 10000D, ymax = -1D;
             for (int i = 0; i < this.vertices.length; i++) {
@@ -636,78 +708,6 @@ public class RCPGenerator {
         private int[] getGoalCoordinates () {
             return new int[]{width - 3, ri(height/4, 3*height/4)};
         }
-    }
-
-    /**
-     * Checks if two line segments intersect, robustly.
-     * @param x1 the first x coordinate of the first line
-     * @param y1 the first y coordinate of the first line
-     * @param x2 the second x coordinate of the first line
-     * @param y2 the second y coordinate of the first line
-     * @param x3 the first x coordinate of the second line
-     * @param y3 the first y coordinate of the second line
-     * @param x4 the second x coordinate of the second line
-     * @param y4 the second y coordinate of the second line
-     * @return true iff the line segments intersect
-     */
-    public static boolean segmentsIntersect(double x1,
-            double y1, double x2, double y2, double x3, double y3,
-            double x4, double y4) {
-
-        double a1, b1, a2, b2, p;
-
-        //  step one: check vertical lines
-        if (doubleEquals(x1, x2) && doubleEquals(x3, x4)) {
-
-            if (!doubleEquals(x1, x3))
-                return false;
-            //  check if their heights overlap
-            return !(Math.max(y1, y2) < Math.min(y3, y4) ||
-                    Math.max(y3, y4) < Math.min(y1, y2));
-        } else if (doubleEquals(x1, x2)) {
-
-            a2 = (y4 - y3) / (x4 - x3);
-            b2 = y3 - a2 * x3;
-            p = a2 * x1 + b2;
-            return isOnLine(p, y1, y2) && isOnLine(p, y3, y4);
-        } else if (doubleEquals(x3, x4)) {
-
-            a1 = (y2 - y1) / (x2 - x1);
-            b1 = y1 - a1 * x1;
-            p = a1 * x3 + b1;
-            return isOnLine(p, y1, y2) && isOnLine(p, y3, y4);
-        }
-
-        //  step two: build equations.
-        a1 = (y2 - y1) / (x2 - x1);
-        b1 = y1 - a1 * x1;
-        a2 = (y4 - y3) / (x4 - x3);
-        b2 = y3 - a2 * x3;
-
-        //  step three: check if lines are parallel
-        if (doubleEquals(a1, a2)) {
-            if (doubleEquals(b1, b2))
-                return !(Math.max(y1, y2) < Math.min(y3, y4) ||
-                    Math.max(y3, y4) < Math.min(y1, y2));
-            return false;
-        }
-
-        //  step four: find the intersection
-        p = - (b1 - b2) / (a1 - a2);
-
-        //  step five: return if that intersection is on the lines
-        return isOnLine(p, x1, x2) && isOnLine(p, x3, x4);
-    }
-
-    /**
-     * Checks if a point is on a line. This must be a linear path (non-
-     * quadratic, cubic, etc.).
-     * @param p0 the point
-     * @param x1 the left segment endpoint
-     * @param x2 the right segment endpoint
-     */
-    public static boolean isOnLine (double p0, double x1, double x2) {
-        return Math.min(x1, x2) <= p0 && p0 <= Math.max(x1, x2);
     }
 
 }
