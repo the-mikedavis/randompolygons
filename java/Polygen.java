@@ -202,20 +202,20 @@ public class Polygen {
         double a1, b1, a2, b2, p;
 
         //  step one: check vertical lines
-        if (doubleEquals(x1, x2) && doubleEquals(x3, x4)) {
+        if (isVertical(x1, x2) && isVertical(x3, x4)) {
 
-            if (!doubleEquals(x1, x3))
+            if (!isVertical(x1, x3))
                 return false;
             //  check if their heights overlap
             return !(Math.max(y1, y2) < Math.min(y3, y4) ||
                     Math.max(y3, y4) < Math.min(y1, y2));
-        } else if (doubleEquals(x1, x2)) {
+        } else if (isVertical(x1, x2)) {
 
             a2 = (y4 - y3) / (x4 - x3);
             b2 = y3 - a2 * x3;
             p = a2 * x1 + b2;
             return isOnLine(p, y1, y2) && isOnLine(p, y3, y4);
-        } else if (doubleEquals(x3, x4)) {
+        } else if (isVertical(x3, x4)) {
 
             a1 = (y2 - y1) / (x2 - x1);
             b1 = y1 - a1 * x1;
@@ -378,6 +378,16 @@ public class Polygen {
         return (int) (Math.random() * (max - min + 1) + min);
     }
 
+    /**
+     * Checks if a line is vertical.
+     * @param x1 the first x coordinate of the segment.
+     * @param x2 the second x coordinate of the segment.
+     * @return ture if the line is vertical.
+     */
+    private static boolean isVertical (double x1, double x2) {
+        return Math.abs(x2 - x1) < 2d;
+    }
+
     /** Point on a circle. */
     private class Vertex implements Comparable<Vertex> {
 
@@ -499,61 +509,60 @@ public class Polygen {
                                 o.vertices[(j + 1) % o.vertices.length].y))
                         return true;
 
-            if (innerCircled(this, o) || innerCircled(o, this))
+            if (this.innerCircled(o) || o.innerCircled(this))
                 return true;
 
-            return !(rayIntersections(this, o) == 0 && 
-                    rayIntersections(o, this) == 0);
+            return !(this.rayIntersections(o) == 0 && 
+                    o.rayIntersections(this) == 0);
         }
 
         /**
-         * Checks if Poly b is insido Poly a by counting raytraces out from b.
-         * This is to be used statically.
-         * @param a the alleged surrounder.
-         * @param b the alleged insider.
-         * @return the number of intersections of the line from b's center
-         * to a point in the opposite direction of a's center and all of a's
-         * edges.
+         * Checks if Poly b is inside this Poly by counting raytraces out
+         * from o.
+         * @param o the alleged surrounder.
+         * @return the number of intersections of the line from o's center
+         * to a point in the opposite direction of this's center and all of 
+         * this's edges.
          */
-        private int rayIntersections (Poly a, Poly b) {
+        private int rayIntersections (Poly o) {
             int intersections = 0;
-            int len = a.vertices.length;
+            int len = this.vertices.length;
 
-            double angle = Math.atan2(a.y - b.y, a.x - b.x);
+            double angle = Math.atan2(this.y - o.y, this.x - o.x);
             angle += Math.PI;
-            double targetX = (width / 2) * Math.cos(angle) + b.x;
-            double targetY = (width / 2) * Math.sin(angle) + b.y;
+            double targetX = (width / 2) * Math.cos(angle) + o.x;
+            double targetY = (width / 2) * Math.sin(angle) + o.y;
 
             for (int i = 0; i < len; i++)
                 //  check intersection of...
                 if (Polygen.segmentsIntersect(
                             //  the edges of a
-                            a.vertices[i].x, a.vertices[i].y,
-                            a.vertices[(i + 1) % len].x,
-                            a.vertices[(i + 1) % len].y,
+                            vertices[i].x, vertices[i].y,
+                            vertices[(i + 1) % len].x,
+                            vertices[(i + 1) % len].y,
                             //  vs the line from b's center to (0,0)
-                            b.x, b.y, targetX, targetY))
+                            o.x, o.y, targetX, targetY))
                     intersections++;
 
             return intersections;
         }
 
         /**
-         * Checks if b is within a's smallest inscribed circle.
+         * Checks if Poly o is within this's smallest inscribed circle.
          * To be used statically.
-         * @param a the alleged surrounder.
-         * @param b the alleged insider.
-         * @return true if b is within a's smallest inscribed circle.
+         * @param o the alleged surrounder.
+         * @return true if o is within this's smallest inscribed circle.
          */
-        private boolean innerCircled(Poly a, Poly b) {
-            double radius = a.innerRadius();
+        private boolean innerCircled(Poly o) {
+            double radius = this.innerRadius();
             //  if the center is inside, it's circled
-            if (Math.hypot(b.x - (a.x + radius), b.y - (a.y + radius)) < radius)
+            if (Math.hypot(o.x - (this.x + radius), 
+                        o.y - (this.y + radius)) < radius)
                 return true;
             //  if the other vertices are inside, it's circled
-            for (int i = 0; i < b.vertices.length; i++)
-                if (Math.hypot(b.vertices[i].x - (a.x + radius),
-                            b.vertices[i].y - (a.y + radius)) < radius)
+            for (int i = 0; i < o.vertices.length; i++)
+                if (Math.hypot(o.vertices[i].x - (this.x + radius),
+                            o.vertices[i].y - (this.y + radius)) < radius)
                     return true;
             return false;
         }
@@ -588,12 +597,12 @@ public class Polygen {
 
             double radius = 0d;
             //  handle the edge case that the longest edge is vertical
-            if (doubleEquals(x1, x2)) {
+            if (isVertical(x1, x2)) {
                 //  the radius line will be horizontal
                 radius = Math.abs(this.x - x1);
             }
             //  handle the edge case that the longest edge is flat
-            else if (doubleEquals(y1, y2)) {
+            else if (isVertical(y1, y2)) {
                 //  the radius line will be vertical
                 radius = Math.abs(this.y - y1);
             }
