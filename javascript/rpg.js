@@ -191,7 +191,8 @@
 
             for (let i = 0; i < this.vertices.length; i++)
                 for (let j = 0; j < o.vertices.length; j++)
-                    if (lineIntersects(this.vertices[i].x, this.vertices[i].y,
+                    if (rpg.lineIntersects(this.vertices[i].x,
+                        this.vertices[i].y,
                         this.vertices[i + 1 == this.vertices.length ? 0 : i + 1].x,
                         this.vertices[i + 1 == this.vertices.length ? 0 : i + 1].y,
                         o.vertices[j].x, o.vertices[j].y,
@@ -219,7 +220,7 @@
     }
 
     //  adapted from https://gist.github.com/Joncom/e8e8d18ebe7fe55c3894
-    function lineIntersects(p0_x, p0_y, p1_x, p1_y, p2_x, p2_y, p3_x, p3_y) {
+    rpg.lineIntersects = function (p0_x, p0_y, p1_x, p1_y, p2_x, p2_y, p3_x, p3_y) {
         var s1_x, s1_y, s2_x, s2_y;
         s1_x = p1_x - p0_x;
         s1_y = p1_y - p0_y;
