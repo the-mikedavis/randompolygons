@@ -1,6 +1,6 @@
 # poly-gen
 
-FIXME: description
+Clojure based random convex polygon generator
 
 ## Installation
 
@@ -8,9 +8,9 @@ Download from http://example.com/FIXME.
 
 ## Usage
 
-FIXME: explanation
+It's a jar, so just...
 
-    $ java -jar poly-gen-0.1.0-standalone.jar [args]
+    $ java -jar poly-gen-0.1.0-standalone.jar
 
 ## Options
 
@@ -20,17 +20,8 @@ FIXME: listing of options this app accepts.
 
 ...
 
-### Bugs
-
-...
-
-### Any Other Sections
-### That You Think
-### Might be Useful
-
 ## License
 
-Copyright © 2018 FIXME
+Copyright © 2018 MCD
 
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+Distributed under the Eclipse Public License either version 1.0
