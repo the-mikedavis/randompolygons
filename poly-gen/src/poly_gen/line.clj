@@ -7,7 +7,7 @@
   (list (list xa ya) (list xb yb))) ; explicitly defined for clarity
 
 (defn vertices->lines
-  "Morph a polygon's list of points into a list of lines"
+  "Morph a polygon's list of points into a vector of lines"
   [points]
   (loop [lines []
          recent (first points)
@@ -21,3 +21,5 @@
   "Tests if two lines intersect using vector cross product"
   [[[x1 y1] [x2 y2]]  [[x3 y3] [x4 y4]]]
   (Line2D/linesIntersect x1 y1 x2 y2 x3 y3 x4 y4))
+
+
