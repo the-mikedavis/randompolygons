@@ -22,13 +22,20 @@
 (defn rand
   "Create a random polygon"
   ([]
-   (rand dims/rand-to-scale))
+   (rand (dims/rand-radius)))
   ([radius]
    (rand radius (vertex/rand)))
-  ([radius [cx cy]]
-   (rand radius '(cx cy) (rand-vertex-count)))
-  ([radius [cx cy] vertex-count]
-   nil))
+  ([radius center]
+   (rand radius center (rand-vertex-count)))
+  ([radius center vertex-count]
+   ;(str radius center vertex-count)))
+   (loop [points '()]
+     (if (= (count points) vertex-count)
+       {:r radius, :c center, :points points}
+       (let [new-pt (vertex/rand center radius)]
+         (if (vertex/unique? points new-pt)
+           (recur (conj points new-pt))
+           (recur points)))))))
 
 
 (defn in-range?
@@ -38,22 +45,6 @@
   (<= (vertex/distance (:c a) (:c b))
       (+ (:r a) (:r b))))
 
-
-;(defn intersect?
-;  "Checks if two polygons have any intersecting lines"
-;  [a b]
-;  (let [lines-a (line/vertices->lines a)
-;        lines-b (line/vertices->lines b)]
-;    (loop [sect? false
-;           current (first lines-a)
-;           remaining (rest lines-a)]
-;      (if (empty? remaining)
-;        sect?
-;        (recur (or sect?
-;                   (some #(line/intersect? current %)
-;                         remaining))
-;               (first remaining)
-;               (rest remaining))))))
 
 (defn intersect?
   "Checks if two polygons have any intersecting lines. Runs in O(n*m) where
